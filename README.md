@@ -94,7 +94,13 @@ docker restart flutter-lms-backend
   - Created reusable UI components (`CustomTextField`, `CustomButton`, `AppTheme`, `AppColors`).
   - Added smoke tests in `widget_test.dart`.
   - Configured git repository with Conventional Commits.
-- [ ] **Day 2: Navigation, Forms, Validation, Assets and Theme**
+- [x] **Day 2: Navigation, Forms, Validation, Assets and Theme**
+  - Configured named route architecture (`AppRoutes`, `RouteGenerator`).
+  - Implemented role-based navigation flow from Login to Student, Instructor, and Admin dashboards.
+  - Added role dashboard shells (`StudentDashboardScreen`, `InstructorDashboardScreen`, `AdminDashboardScreen`).
+  - Added reusable components (`ConfirmationDialog`, `SectionHeader`, `StatusBadge`, `AppMessageWidget`).
+  - Configured assets folders (`assets/images/`, `assets/icons/`) in `pubspec.yaml`.
+  - Added navigation & dialog tests in `widget_test.dart`.
 - [ ] **Day 3: Splash, Onboarding, Role Dashboards and Standard UI States**
 - [ ] **Day 4: Docker Backend, Postman and Core API Setup**
 - [ ] **Day 5: Authentication, Session Management, Password Recovery and Profiles**

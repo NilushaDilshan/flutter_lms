@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'core/constants/app_strings.dart';
+import 'core/routes/app_routes.dart';
+import 'core/routes/route_generator.dart';
 import 'core/theme/app_theme.dart';
-import 'features/auth/screens/login_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,7 +18,8 @@ class FlutterLmsApp extends StatelessWidget {
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const LoginScreen(),
+      initialRoute: AppRoutes.initial,
+      onGenerateRoute: RouteGenerator.generateRoute,
     );
   }
 }

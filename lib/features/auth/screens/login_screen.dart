@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
 
@@ -64,26 +65,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (mounted) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: AppColors.primary,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle_outline, color: Colors.white),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Demo Login validated for $_selectedRole (${_emailController.text.trim()})',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
-          ),
-        ),
+
+      String targetRoute;
+      Map<String, dynamic> arguments;
+
+      if (_selectedRole == 'STUDENT') {
+        targetRoute = AppRoutes.studentDashboard;
+        arguments = {'name': 'Kamal Perera'};
+      } else if (_selectedRole == 'INSTRUCTOR') {
+        targetRoute = AppRoutes.instructorDashboard;
+        arguments = {'name': 'Nimal Fernando'};
+      } else {
+        targetRoute = AppRoutes.adminDashboard;
+        arguments = {'email': _emailController.text.trim()};
+      }
+
+      Navigator.of(context).pushReplacementNamed(
+        targetRoute,
+        arguments: arguments,
       );
     }
   }
