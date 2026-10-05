@@ -101,7 +101,12 @@ docker restart flutter-lms-backend
   - Added reusable components (`ConfirmationDialog`, `SectionHeader`, `StatusBadge`, `AppMessageWidget`).
   - Configured assets folders (`assets/images/`, `assets/icons/`) in `pubspec.yaml`.
   - Added navigation & dialog tests in `widget_test.dart`.
-- [ ] **Day 3: Splash, Onboarding, Role Dashboards and Standard UI States**
+- [x] **Day 3: Splash, Onboarding, Role Dashboards and Standard UI States**
+  - Created animated `SplashScreen` with logo scaling and auto-timer navigation.
+  - Built complete 3-screen `OnboardingScreen` using `PageView`, dot indicators, and PopScope back handling.
+  - Created reusable Standard UI State widgets (`LoadingStateWidget`, `EmptyStateWidget`, `ErrorStateWidget`, `SuccessStateWidget`).
+  - Added UI State simulator bar to `StudentDashboardScreen` for verifying loading, empty, and error views.
+  - Added unit and widget tests in `widget_test.dart` for splash, onboarding, UI states, and login.
 - [ ] **Day 4: Docker Backend, Postman and Core API Setup**
 - [ ] **Day 5: Authentication, Session Management, Password Recovery and Profiles**
 - [ ] **Day 6: Course Browse, Enrollment, Curriculum, Lessons and Progress**
