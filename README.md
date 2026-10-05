@@ -107,7 +107,15 @@ docker restart flutter-lms-backend
   - Created reusable Standard UI State widgets (`LoadingStateWidget`, `EmptyStateWidget`, `ErrorStateWidget`, `SuccessStateWidget`).
   - Added UI State simulator bar to `StudentDashboardScreen` for verifying loading, empty, and error views.
   - Added unit and widget tests in `widget_test.dart` for splash, onboarding, UI states, and login.
-- [ ] **Day 4: Docker Backend, Postman and Core API Setup**
+- [x] **Day 4: Docker Backend, Postman and Core API Setup**
+  - Documented Docker container setup (`dckuma/flutter-lms-backend:v1.0.0`) and host port mapping (`5000:5000`).
+  - Configured `AppConfig` with emulator base URL (`http://10.0.2.2:5000`) and network timeout definitions.
+  - Implemented `ApiEndpoints` contract matching the complete Postman collection.
+  - Built encrypted `TokenStorage` with `flutter_secure_storage` for access/refresh tokens and session persistence.
+  - Built `ApiException` and `ApiResponse` for clean HTTP status code and validation error mapping.
+  - Implemented `AuthInterceptor` with automated Bearer injection and single-retry refresh-token rotation.
+  - Built `ApiClient` with Dio for GET, POST, PUT, PATCH, DELETE and multipart FormData upload.
+  - Added unit test suite in `test/api_client_test.dart` (10/10 tests passing).
 - [ ] **Day 5: Authentication, Session Management, Password Recovery and Profiles**
 - [ ] **Day 6: Course Browse, Enrollment, Curriculum, Lessons and Progress**
 - [ ] **Day 7: Quizzes, Assignments, Reviews, Notifications and Student Profile UX**
