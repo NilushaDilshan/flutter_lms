@@ -68,6 +68,11 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           IconButton(
+            icon: const Icon(Icons.account_circle_outlined, color: AppColors.adminRole),
+            tooltip: 'My Profile',
+            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.profile),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout_rounded, color: AppColors.textSecondary),
             tooltip: 'Logout',
             onPressed: () => _handleLogout(context),

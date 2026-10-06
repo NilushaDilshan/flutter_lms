@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_lms/core/constants/app_strings.dart';
 import 'package:flutter_lms/core/routes/app_routes.dart';
 import 'package:flutter_lms/core/widgets/empty_state_widget.dart';
 import 'package:flutter_lms/core/widgets/error_state_widget.dart';
 import 'package:flutter_lms/core/widgets/loading_state_widget.dart';
 import 'package:flutter_lms/core/widgets/success_state_widget.dart';
+import 'package:flutter_lms/features/auth/providers/auth_provider.dart';
+import 'package:flutter_lms/features/auth/screens/forgot_password_screen.dart';
 import 'package:flutter_lms/features/auth/screens/login_screen.dart';
+import 'package:flutter_lms/features/auth/screens/otp_verification_screen.dart';
+import 'package:flutter_lms/features/auth/screens/register_screen.dart';
 import 'package:flutter_lms/features/onboarding/screens/onboarding_screen.dart';
+import 'package:flutter_lms/features/profile/providers/profile_provider.dart';
 import 'package:flutter_lms/features/splash/screens/splash_screen.dart';
 
 void main() {
@@ -99,17 +105,87 @@ void main() {
     expect(retryPressed, isTrue);
   });
 
+  testWidgets('Register screen renders role tabs and student fields', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ],
+        child: const MaterialApp(
+          home: RegisterScreen(),
+        ),
+      ),
+    );
+
+    expect(find.text('Create Account'), findsOneWidget);
+    expect(find.text('Student Account'), findsOneWidget);
+    expect(find.text('Instructor Account'), findsOneWidget);
+    expect(find.text('Date of Birth (YYYY-MM-DD)'), findsOneWidget);
+    expect(find.text('Education Level'), findsOneWidget);
+
+    // Switch to Instructor tab
+    await tester.tap(find.text('Instructor Account'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Professional Headline'), findsOneWidget);
+    expect(find.text('Qualification'), findsOneWidget);
+  });
+
+  testWidgets('OtpVerificationScreen renders verification UI and timer', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ],
+        child: const MaterialApp(
+          home: OtpVerificationScreen(email: 'test@lms.com'),
+        ),
+      ),
+    );
+
+    expect(find.text('Verify Your Email Address'), findsOneWidget);
+    expect(find.textContaining('test@lms.com'), findsOneWidget);
+    expect(find.text('Verify & Activate Account'), findsOneWidget);
+    expect(find.textContaining('Resend code in'), findsOneWidget);
+  });
+
+  testWidgets('ForgotPasswordScreen renders step 1 email input', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ],
+        child: const MaterialApp(
+          home: ForgotPasswordScreen(),
+        ),
+      ),
+    );
+
+    expect(find.text('Forgot Your Password?'), findsOneWidget);
+    expect(find.text('Send Reset Code'), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Code'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
+  });
+
   testWidgets('Login screen and navigation test', (WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        onGenerateRoute: (settings) {
-          if (settings.name == '/student/dashboard') {
-            return MaterialPageRoute(
-              builder: (_) => const Scaffold(body: Text('Student Dashboard Loaded')),
-            );
-          }
-          return MaterialPageRoute(builder: (_) => const LoginScreen());
-        },
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ],
+        child: MaterialApp(
+          onGenerateRoute: (settings) {
+            if (settings.name == '/student/dashboard') {
+              return MaterialPageRoute(
+                builder: (_) => const Scaffold(body: Text('Student Dashboard Loaded')),
+              );
+            }
+            return MaterialPageRoute(builder: (_) => const LoginScreen());
+          },
+        ),
       ),
     );
 

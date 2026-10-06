@@ -116,7 +116,14 @@ docker restart flutter-lms-backend
   - Implemented `AuthInterceptor` with automated Bearer injection and single-retry refresh-token rotation.
   - Built `ApiClient` with Dio for GET, POST, PUT, PATCH, DELETE and multipart FormData upload.
   - Added unit test suite in `test/api_client_test.dart` (10/10 tests passing).
-- [ ] **Day 5: Authentication, Session Management, Password Recovery and Profiles**
+- [x] **Day 5: Authentication, Session Management, Password Recovery and Profiles**
+  - Implemented `AuthProvider` with login, register (Student/Instructor), OTP email verification, forgot-password 3-step flow, logout, and session restore via `TokenStorage`.
+  - Built `UserModel`, `AuthTokensModel`, `StudentProfileModel`, and `InstructorProfileModel` with full JSON serialization and `copyWith` support.
+  - Built `ProfileProvider` with full profile fetch, role-specific profile update, multipart image upload/delete (`profileImage` key), and change-password flow.
+  - Created `RegisterScreen` (tabbed Student/Instructor), `OtpVerificationScreen` (60 s countdown + resend), `ForgotPasswordScreen` (3-step indicator), and `ProfileScreen` (avatar camera upload, security settings).
+  - Connected `LoginScreen` to `AuthProvider` with real backend call, role-based navigation, and offline demo fallback.
+  - Added Profile icon to all three role dashboards navigating to `/profile`.
+  - Expanded test suite to 16 tests across `widget_test.dart` and `api_client_test.dart` — all passing.
 - [ ] **Day 6: Course Browse, Enrollment, Curriculum, Lessons and Progress**
 - [ ] **Day 7: Quizzes, Assignments, Reviews, Notifications and Student Profile UX**
 - [ ] **Day 8: Instructor Course Building and Learner Management**

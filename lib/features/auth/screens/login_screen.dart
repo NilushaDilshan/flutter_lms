@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
+import '../providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -60,30 +62,66 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // Simulate authentication processing for Day 1 UI testing
-    await Future.delayed(const Duration(milliseconds: 900));
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
-    if (mounted) {
-      setState(() => _isLoading = false);
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final user = await authProvider.login(email: email, password: password);
 
-      String targetRoute;
-      Map<String, dynamic> arguments;
+      if (mounted) {
+        setState(() => _isLoading = false);
 
-      if (_selectedRole == 'STUDENT') {
-        targetRoute = AppRoutes.studentDashboard;
-        arguments = {'name': 'Kamal Perera'};
-      } else if (_selectedRole == 'INSTRUCTOR') {
-        targetRoute = AppRoutes.instructorDashboard;
-        arguments = {'name': 'Nimal Fernando'};
-      } else {
-        targetRoute = AppRoutes.adminDashboard;
-        arguments = {'email': _emailController.text.trim()};
+        String targetRoute;
+        Map<String, dynamic> arguments;
+
+        if (user.isStudent) {
+          targetRoute = AppRoutes.studentDashboard;
+          arguments = {'name': user.fullName.isNotEmpty ? user.fullName : 'Kamal Perera'};
+        } else if (user.isInstructor) {
+          targetRoute = AppRoutes.instructorDashboard;
+          arguments = {'name': user.fullName.isNotEmpty ? user.fullName : 'Nimal Fernando'};
+        } else {
+          targetRoute = AppRoutes.adminDashboard;
+          arguments = {'email': user.email};
+        }
+
+        Navigator.of(context).pushReplacementNamed(
+          targetRoute,
+          arguments: arguments,
+        );
       }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
 
-      Navigator.of(context).pushReplacementNamed(
-        targetRoute,
-        arguments: arguments,
-      );
+        String targetRoute;
+        Map<String, dynamic> arguments;
+
+        if (_selectedRole == 'STUDENT') {
+          targetRoute = AppRoutes.studentDashboard;
+          arguments = {'name': 'Kamal Perera'};
+        } else if (_selectedRole == 'INSTRUCTOR') {
+          targetRoute = AppRoutes.instructorDashboard;
+          arguments = {'name': 'Nimal Fernando'};
+        } else {
+          targetRoute = AppRoutes.adminDashboard;
+          arguments = {'email': email};
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+            content: Text('Logged in as $_selectedRole (Offline / Demo fallback active)'),
+          ),
+        );
+
+        Navigator.of(context).pushReplacementNamed(
+          targetRoute,
+          arguments: arguments,
+        );
+      }
     }
   }
 
@@ -241,12 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Forgot Password flow will be connected in Day 5'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
+                            Navigator.of(context).pushNamed(AppRoutes.forgotPassword);
                           },
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
@@ -288,12 +321,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(width: 6),
                         GestureDetector(
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Registration flow will be integrated in Day 5'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
+                            Navigator.of(context).pushNamed(AppRoutes.register);
                           },
                           child: const Text(
                             AppStrings.signUp,

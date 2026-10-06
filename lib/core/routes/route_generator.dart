@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/screens/otp_verification_screen.dart';
+import '../../features/auth/screens/register_screen.dart';
 import '../../features/dashboard/screens/admin_dashboard_screen.dart';
 import '../../features/dashboard/screens/instructor_dashboard_screen.dart';
 import '../../features/dashboard/screens/student_dashboard_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
+import '../../features/profile/screens/profile_screen.dart';
 import '../../features/splash/screens/splash_screen.dart';
 import 'app_routes.dart';
 
@@ -27,6 +31,33 @@ class RouteGenerator {
       case AppRoutes.login:
         return MaterialPageRoute(
           builder: (_) => const LoginScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.register:
+        return MaterialPageRoute(
+          builder: (_) => const RegisterScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.verifyOtp:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final email = args?['email'] as String? ?? '';
+        final role = args?['role'] as String? ?? 'STUDENT';
+        return MaterialPageRoute(
+          builder: (_) => OtpVerificationScreen(email: email, role: role),
+          settings: settings,
+        );
+
+      case AppRoutes.forgotPassword:
+        return MaterialPageRoute(
+          builder: (_) => const ForgotPasswordScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.profile:
+        return MaterialPageRoute(
+          builder: (_) => const ProfileScreen(),
           settings: settings,
         );
 

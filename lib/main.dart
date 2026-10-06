@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'core/constants/app_strings.dart';
 import 'core/routes/app_routes.dart';
 import 'core/routes/route_generator.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/providers/auth_provider.dart';
+import 'features/profile/providers/profile_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const FlutterLmsApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+      ],
+      child: const FlutterLmsApp(),
+    ),
+  );
 }
 
 class FlutterLmsApp extends StatelessWidget {

@@ -13,15 +13,17 @@ class ApiEndpoints {
 
   // Password Recovery
   static const String forgotPassword = '/api/v1/auth/forgot-password';
-  static const String verifyResetOtp = '/api/v1/auth/verify-reset-otp';
+  static const String verifyResetOtp = '/api/v1/auth/verify-password-reset-otp';
   static const String resetPassword = '/api/v1/auth/reset-password';
 
-  // User Profile
+  // User Profile & Account
   static const String currentUser = '/api/v1/users/me';
-  static const String updateStudentProfile = '/api/v1/users/profile/student';
-  static const String updateInstructorProfile = '/api/v1/users/profile/instructor';
-  static const String uploadProfileImage = '/api/v1/users/profile/image';
-  static const String deleteProfileImage = '/api/v1/users/profile/image';
+  static const String fullProfile = '/api/v1/users/me/full-profile';
+  static const String changePassword = '/api/v1/users/me/change-password';
+  static const String deactivateAccount = '/api/v1/users/me/deactivate';
+  static const String profileImage = '/api/v1/users/me/profile-image';
+  static const String studentProfile = '/api/v1/profiles/student/me';
+  static const String instructorProfile = '/api/v1/profiles/instructor/me';
 
   // Course Categories
   static const String categories = '/api/v1/categories';
