@@ -27,6 +27,25 @@ class AuthProvider extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
   String? get userRole => _currentUser?.role;
 
+  /// Used in Demo / Offline mode to set a fake user so Profile screen
+  /// shows correct name, email and role instead of "User Name".
+  void setDemoUser({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String role,
+  }) {
+    _currentUser = UserModel(
+      id: 'demo-user',
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      role: role,
+      isEmailVerified: true,
+    );
+    notifyListeners();
+  }
+
   // Restore session from encrypted storage
   Future<bool> initSession() async {
     _isLoading = true;

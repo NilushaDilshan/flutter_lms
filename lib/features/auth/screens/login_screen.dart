@@ -97,17 +97,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
         String targetRoute;
         Map<String, dynamic> arguments;
+        String demoFirstName;
+        String demoLastName;
 
         if (_selectedRole == 'STUDENT') {
           targetRoute = AppRoutes.studentDashboard;
+          demoFirstName = 'Kamal';
+          demoLastName = 'Perera';
           arguments = {'name': 'Kamal Perera'};
         } else if (_selectedRole == 'INSTRUCTOR') {
           targetRoute = AppRoutes.instructorDashboard;
+          demoFirstName = 'Nimal';
+          demoLastName = 'Fernando';
           arguments = {'name': 'Nimal Fernando'};
         } else {
           targetRoute = AppRoutes.adminDashboard;
+          demoFirstName = 'Admin';
+          demoLastName = 'User';
           arguments = {'email': email};
         }
+
+        // Set demo user in AuthProvider so ProfileScreen shows correct details
+        context.read<AuthProvider>().setDemoUser(
+          firstName: demoFirstName,
+          lastName: demoLastName,
+          email: email,
+          role: _selectedRole,
+        );
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
