@@ -31,8 +31,8 @@ class UserModel {
       lastName: json['lastName'] as String? ?? '',
       email: json['email'] as String? ?? '',
       role: (json['role'] as String? ?? 'STUDENT').toUpperCase(),
-      isEmailVerified: json['isEmailVerified'] as bool? ?? false,
-      profileImage: json['profileImage'] as String?,
+      isEmailVerified: (json['isEmailVerified'] ?? json['emailVerified']) as bool? ?? false,
+      profileImage: (json['profileImage'] ?? json['profileImageUrl']) as String?,
       bio: json['bio'] as String?,
     );
   }

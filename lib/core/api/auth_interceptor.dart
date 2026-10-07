@@ -49,6 +49,42 @@ class AuthInterceptor extends QueuedInterceptor {
     final response = err.response;
     final requestOptions = err.requestOptions;
 
+    // Handle host fallback (e.g. physical device needing localhost instead of 10.0.2.2 emulator host)
+    if (err.type == DioExceptionType.connectionError || err.type == DioExceptionType.connectionTimeout) {
+      final hasRetriedHost = requestOptions.headers['x-has-retried-host'] == 'true';
+      if (!hasRetriedHost) {
+        final currentBase = AppConfig.baseUrl;
+        final candidate = currentBase.contains('10.0.2.2')
+            ? 'http://localhost:5000'
+            : (currentBase.contains('localhost') ? 'http://10.0.2.2:5000' : null);
+
+        if (candidate != null) {
+          try {
+            final testDio = Dio(
+              BaseOptions(
+                baseUrl: candidate,
+                connectTimeout: const Duration(seconds: 2),
+                receiveTimeout: const Duration(seconds: 2),
+              ),
+            );
+            final health = await testDio.get('/api/v1/health');
+            if (health.statusCode == 200) {
+              AppConfig.setBaseUrl(candidate);
+              _dio.options.baseUrl = candidate;
+
+              final retryOptions = requestOptions.copyWith(
+                baseUrl: candidate,
+                headers: Map<String, dynamic>.from(requestOptions.headers)
+                  ..['x-has-retried-host'] = 'true',
+              );
+              final retryRes = await _dio.fetch(retryOptions);
+              return handler.resolve(retryRes);
+            }
+          } catch (_) {}
+        }
+      }
+    }
+
     // Only handle 401 Unauthorized
     if (response?.statusCode == 401) {
       // Rule 1: Do not refresh if the failed request was already refresh-token or login

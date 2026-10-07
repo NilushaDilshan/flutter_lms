@@ -39,16 +39,24 @@ class ProfileProvider extends ChangeNotifier {
         _user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
       }
 
-      if (data['studentProfile'] != null) {
-        _studentProfile = StudentProfileModel.fromJson(
-          data['studentProfile'] as Map<String, dynamic>,
-        );
-      }
-
-      if (data['instructorProfile'] != null) {
-        _instructorProfile = InstructorProfileModel.fromJson(
-          data['instructorProfile'] as Map<String, dynamic>,
-        );
+      final profileData = data['profile'] as Map<String, dynamic>?;
+      if (profileData != null) {
+        if (_user?.isInstructor == true) {
+          _instructorProfile = InstructorProfileModel.fromJson(profileData);
+        } else {
+          _studentProfile = StudentProfileModel.fromJson(profileData);
+        }
+      } else {
+        if (data['studentProfile'] != null) {
+          _studentProfile = StudentProfileModel.fromJson(
+            data['studentProfile'] as Map<String, dynamic>,
+          );
+        }
+        if (data['instructorProfile'] != null) {
+          _instructorProfile = InstructorProfileModel.fromJson(
+            data['instructorProfile'] as Map<String, dynamic>,
+          );
+        }
       }
 
       _setLoading(false);
@@ -184,14 +192,19 @@ class ProfileProvider extends ChangeNotifier {
       );
 
       final data = response.data['data'] as Map<String, dynamic>?;
-      final imageUrl = data?['profileImage']?.toString();
-
-      if (imageUrl != null && _user != null) {
-        _user = _user!.copyWith(profileImage: imageUrl);
+      if (data != null && data['user'] != null) {
+        _user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+      } else {
+        final imageUrl = data?['profileImage']?.toString() ??
+            data?['profileImageUrl']?.toString();
+        if (imageUrl != null && _user != null) {
+          _user = _user!.copyWith(profileImage: imageUrl);
+        }
       }
 
       _setLoading(false);
-      return imageUrl;
+      notifyListeners();
+      return _user?.profileImage;
     } on ApiException catch (e) {
       _setError(e.message);
       _setLoading(false);
@@ -205,11 +218,15 @@ class ProfileProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      await _apiClient.delete(ApiEndpoints.profileImage);
-      if (_user != null) {
+      final response = await _apiClient.delete(ApiEndpoints.profileImage);
+      final data = response.data['data'] as Map<String, dynamic>?;
+      if (data != null && data['user'] != null) {
+        _user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+      } else if (_user != null) {
         _user = _user!.copyWith(profileImage: null);
       }
       _setLoading(false);
+      notifyListeners();
     } on ApiException catch (e) {
       _setError(e.message);
       _setLoading(false);
