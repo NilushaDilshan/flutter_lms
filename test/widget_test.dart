@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_lms/core/constants/app_strings.dart';
 import 'package:flutter_lms/core/routes/app_routes.dart';
+import 'package:flutter_lms/core/widgets/custom_text_field.dart';
 import 'package:flutter_lms/core/widgets/empty_state_widget.dart';
 import 'package:flutter_lms/core/widgets/error_state_widget.dart';
 import 'package:flutter_lms/core/widgets/loading_state_widget.dart';
@@ -192,11 +193,76 @@ void main() {
     expect(find.text(AppStrings.appName), findsOneWidget);
     expect(find.text(AppStrings.signIn), findsOneWidget);
 
+    await tester.enterText(find.byType(CustomTextField).first, 'kamal.perera@example.com');
+    await tester.enterText(find.byType(CustomTextField).last, 'Password123!');
+
     await tester.tap(find.text(AppStrings.signIn));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1000));
     await tester.pumpAndSettle();
 
     expect(find.text('Student Dashboard Loaded'), findsOneWidget);
+  });
+
+  testWidgets('Login redirects to Instructor dashboard when instructor email is entered', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ],
+        child: MaterialApp(
+          onGenerateRoute: (settings) {
+            if (settings.name == '/instructor/dashboard') {
+              return MaterialPageRoute(
+                builder: (_) => const Scaffold(body: Text('Instructor Dashboard Loaded')),
+              );
+            }
+            return MaterialPageRoute(builder: (_) => const LoginScreen());
+          },
+        ),
+      ),
+    );
+
+    await tester.enterText(find.byType(CustomTextField).first, 'nimal.instructor@example.com');
+    await tester.enterText(find.byType(CustomTextField).last, 'Password123!');
+
+    await tester.tap(find.text(AppStrings.signIn));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1000));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Instructor Dashboard Loaded'), findsOneWidget);
+  });
+
+  testWidgets('Login redirects to Admin dashboard when admin email is entered', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ],
+        child: MaterialApp(
+          onGenerateRoute: (settings) {
+            if (settings.name == '/admin/dashboard') {
+              return MaterialPageRoute(
+                builder: (_) => const Scaffold(body: Text('Admin Dashboard Loaded')),
+              );
+            }
+            return MaterialPageRoute(builder: (_) => const LoginScreen());
+          },
+        ),
+      ),
+    );
+
+    await tester.enterText(find.byType(CustomTextField).first, 'admin@lms.com');
+    await tester.enterText(find.byType(CustomTextField).last, 'AdminPass123!');
+
+    await tester.tap(find.text(AppStrings.signIn));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1000));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Admin Dashboard Loaded'), findsOneWidget);
   });
 }

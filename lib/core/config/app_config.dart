@@ -9,9 +9,7 @@ class AppConfig {
 
   // Configurable base URL (Defaults to Android emulator per task specifications)
   // Important: Do not append /api/v1 here because endpoints already include /api/v1
-  // ADB reverse tunnel active: adb reverse tcp:5000 tcp:5000
-  // Phone localhost:5000 → PC Docker backend
-  static String baseUrl = defaultLocalhostBaseUrl;
+  static String baseUrl = defaultEmulatorBaseUrl;
 
   // Network Timeouts
   static const Duration connectTimeout = Duration(seconds: 15);

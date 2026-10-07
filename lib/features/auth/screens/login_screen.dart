@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/routes/app_routes.dart';
@@ -22,31 +23,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = false;
   bool _isLoading = false;
-
-  // Selected role tab for demo/testing convenience
-  String _selectedRole = 'STUDENT';
-
-  @override
-  void initState() {
-    super.initState();
-    _fillRoleCredentials('STUDENT');
-  }
-
-  void _fillRoleCredentials(String role) {
-    setState(() {
-      _selectedRole = role;
-      if (role == 'STUDENT') {
-        _emailController.text = 'kamal.perera@example.com';
-        _passwordController.text = 'Password123!';
-      } else if (role == 'INSTRUCTOR') {
-        _emailController.text = 'nimal.fernando@example.com';
-        _passwordController.text = 'Password123!';
-      } else {
-        _emailController.text = 'admin@lms.com';
-        _passwordController.text = 'AdminPass123!';
-      }
-    });
-  }
 
   @override
   void dispose() {
@@ -72,19 +48,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
 
-        String targetRoute;
-        Map<String, dynamic> arguments;
-
-        if (user.isStudent) {
-          targetRoute = AppRoutes.studentDashboard;
-          arguments = {'name': user.fullName.isNotEmpty ? user.fullName : 'Kamal Perera'};
-        } else if (user.isInstructor) {
-          targetRoute = AppRoutes.instructorDashboard;
-          arguments = {'name': user.fullName.isNotEmpty ? user.fullName : 'Nimal Fernando'};
-        } else {
-          targetRoute = AppRoutes.adminDashboard;
-          arguments = {'email': user.email};
-        }
+        // Determine destination route based on authenticated user's role
+        final targetRoute = _getRouteForRole(user.role);
+        final arguments = _getArgumentsForRole(user.role, user.fullName, user.email);
 
         Navigator.of(context).pushReplacementNamed(
           targetRoute,
@@ -95,49 +61,107 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
 
-        String targetRoute;
-        Map<String, dynamic> arguments;
-        String demoFirstName;
-        String demoLastName;
+        // Real server authentication rejection (e.g., wrong password 401 or unverified email 403)
+        final isAuthRejection = e is ApiException &&
+            (e.statusCode == 401 ||
+                (e.statusCode == 403 &&
+                    e.message.toLowerCase().contains('verify')));
 
-        if (_selectedRole == 'STUDENT') {
-          targetRoute = AppRoutes.studentDashboard;
-          demoFirstName = 'Kamal';
-          demoLastName = 'Perera';
-          arguments = {'name': 'Kamal Perera'};
-        } else if (_selectedRole == 'INSTRUCTOR') {
-          targetRoute = AppRoutes.instructorDashboard;
-          demoFirstName = 'Nimal';
-          demoLastName = 'Fernando';
-          arguments = {'name': 'Nimal Fernando'};
+        if (!isAuthRejection) {
+          // Offline / Demo fallback: Determine role based on email address
+          final inferredRole = _inferRoleFromEmail(email);
+          final names = _getDemoNamesForRole(inferredRole);
+          final targetRoute = _getRouteForRole(inferredRole);
+          final arguments = _getArgumentsForRole(
+            inferredRole,
+            '${names[0]} ${names[1]}',
+            email,
+          );
+
+          context.read<AuthProvider>().setDemoUser(
+            firstName: names[0],
+            lastName: names[1],
+            email: email,
+            role: inferredRole,
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.orange.shade800,
+              behavior: SnackBarBehavior.floating,
+              content: Text(
+                'Offline Demo: Logged in as $inferredRole ($email)',
+              ),
+            ),
+          );
+
+          Navigator.of(context).pushReplacementNamed(
+            targetRoute,
+            arguments: arguments,
+          );
         } else {
-          targetRoute = AppRoutes.adminDashboard;
-          demoFirstName = 'Admin';
-          demoLastName = 'User';
-          arguments = {'email': email};
+          // Real server error (e.g. wrong password, unverified email)
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              content: Text(e.message),
+            ),
+          );
         }
-
-        // Set demo user in AuthProvider so ProfileScreen shows correct details
-        context.read<AuthProvider>().setDemoUser(
-          firstName: demoFirstName,
-          lastName: demoLastName,
-          email: email,
-          role: _selectedRole,
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-            content: Text('Logged in as $_selectedRole (Offline / Demo fallback active)'),
-          ),
-        );
-
-        Navigator.of(context).pushReplacementNamed(
-          targetRoute,
-          arguments: arguments,
-        );
       }
+    }
+  }
+
+  String _inferRoleFromEmail(String email) {
+    final lower = email.toLowerCase();
+    if (lower.contains('admin')) {
+      return 'ADMIN';
+    } else if (lower.contains('instructor') ||
+        lower.contains('teacher') ||
+        lower.contains('nimal')) {
+      return 'INSTRUCTOR';
+    }
+    return 'STUDENT';
+  }
+
+  List<String> _getDemoNamesForRole(String role) {
+    switch (role) {
+      case 'ADMIN':
+        return ['Admin', 'User'];
+      case 'INSTRUCTOR':
+        return ['Nimal', 'Fernando'];
+      case 'STUDENT':
+      default:
+        return ['Kamal', 'Perera'];
+    }
+  }
+
+  String _getRouteForRole(String role) {
+    switch (role.toUpperCase()) {
+      case 'ADMIN':
+        return AppRoutes.adminDashboard;
+      case 'INSTRUCTOR':
+        return AppRoutes.instructorDashboard;
+      case 'STUDENT':
+      default:
+        return AppRoutes.studentDashboard;
+    }
+  }
+
+  Map<String, dynamic> _getArgumentsForRole(
+    String role,
+    String fullName,
+    String email,
+  ) {
+    switch (role.toUpperCase()) {
+      case 'ADMIN':
+        return {'email': email};
+      case 'INSTRUCTOR':
+        return {'name': fullName.isNotEmpty ? fullName : 'Instructor'};
+      case 'STUDENT':
+      default:
+        return {'name': fullName.isNotEmpty ? fullName : 'Student'};
     }
   }
 
@@ -192,24 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 28),
-
-                    // Role Selector Card
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        children: [
-                          _buildRoleButton('STUDENT', 'Student', Icons.person_outline),
-                          _buildRoleButton('INSTRUCTOR', 'Instructor', Icons.co_present_outlined),
-                          _buildRoleButton('ADMIN', 'Admin', Icons.admin_panel_settings_outlined),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
                     // Email Input
                     CustomTextField(
@@ -354,65 +361,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRoleButton(String roleKey, String label, IconData icon) {
-    final isSelected = _selectedRole == roleKey;
-    Color activeColor;
-    if (roleKey == 'STUDENT') {
-      activeColor = AppColors.studentRole;
-    } else if (roleKey == 'INSTRUCTOR') {
-      activeColor = AppColors.instructorRole;
-    } else {
-      activeColor = AppColors.adminRole;
-    }
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _fillRoleCredentials(roleKey),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(20),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 15,
-                color: isSelected ? activeColor : AppColors.textMuted,
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? activeColor : AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
       ),
