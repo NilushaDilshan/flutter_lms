@@ -27,7 +27,9 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
   @override
   void initState() {
     super.initState();
-    _currentLesson = widget.lesson;
+    final provider = context.read<CourseProvider>();
+    final isDone = provider.currentProgress?.isLessonCompleted(widget.lesson.id) ?? widget.lesson.isCompleted;
+    _currentLesson = widget.lesson.copyWith(isCompleted: isDone);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CourseProvider>().startLesson(_currentLesson.id);
     });
@@ -60,18 +62,20 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
   }
 
   void _navigateToNextLesson() {
-    final sections = context.read<CourseProvider>().sections;
+    final provider = context.read<CourseProvider>();
+    final sections = provider.sections;
     final allLessons = sections.expand((s) => s.lessons).toList();
     final currentIndex = allLessons.indexWhere((l) => l.id == _currentLesson.id);
 
     if (currentIndex != -1 && currentIndex + 1 < allLessons.length) {
       final next = allLessons[currentIndex + 1];
+      final isDone = provider.currentProgress?.isLessonCompleted(next.id) ?? next.isCompleted;
       setState(() {
-        _currentLesson = next;
+        _currentLesson = next.copyWith(isCompleted: isDone);
         _isPlayingVideo = false;
         _videoProgress = 0.0;
       });
-      context.read<CourseProvider>().startLesson(next.id);
+      provider.startLesson(next.id);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('🎉 You reached the end of the course curriculum!')),
@@ -80,18 +84,20 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
   }
 
   void _navigateToPreviousLesson() {
-    final sections = context.read<CourseProvider>().sections;
+    final provider = context.read<CourseProvider>();
+    final sections = provider.sections;
     final allLessons = sections.expand((s) => s.lessons).toList();
     final currentIndex = allLessons.indexWhere((l) => l.id == _currentLesson.id);
 
     if (currentIndex > 0) {
       final prev = allLessons[currentIndex - 1];
+      final isDone = provider.currentProgress?.isLessonCompleted(prev.id) ?? prev.isCompleted;
       setState(() {
-        _currentLesson = prev;
+        _currentLesson = prev.copyWith(isCompleted: isDone);
         _isPlayingVideo = false;
         _videoProgress = 0.0;
       });
-      context.read<CourseProvider>().startLesson(prev.id);
+      provider.startLesson(prev.id);
     }
   }
 
@@ -200,6 +206,31 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
                       backgroundColor: AppColors.success,
                       icon: const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
                       onPressed: _handleCompleteLesson,
+                    )
+                  else
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle, color: AppColors.success, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Lesson Completed',
+                            style: TextStyle(
+                              color: AppColors.success,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
                   const SizedBox(height: 16),

@@ -68,4 +68,26 @@ class EnrollmentModel {
       'lastAccessedAt': lastAccessedAt?.toIso8601String(),
     };
   }
+
+  EnrollmentModel copyWith({
+    String? id,
+    String? studentId,
+    String? courseId,
+    CourseModel? course,
+    String? status,
+    int? progressPercentage,
+    DateTime? enrolledAt,
+    DateTime? lastAccessedAt,
+  }) {
+    return EnrollmentModel(
+      id: id ?? this.id,
+      studentId: studentId ?? this.studentId,
+      courseId: courseId ?? this.courseId,
+      course: course ?? this.course,
+      status: status ?? this.status,
+      progressPercentage: progressPercentage ?? this.progressPercentage,
+      enrolledAt: enrolledAt ?? this.enrolledAt,
+      lastAccessedAt: lastAccessedAt ?? this.lastAccessedAt,
+    );
+  }
 }

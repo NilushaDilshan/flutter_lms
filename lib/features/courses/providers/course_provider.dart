@@ -217,7 +217,9 @@ class CourseProvider extends ChangeNotifier {
         _myEnrollments.removeWhere((e) => e.courseId == courseId);
         _myEnrollments.add(newEnrollment);
       }
+      // Reload details + progress now that enrollment is confirmed
       await loadCourseDetails(courseId);
+      await loadCourseProgress(courseId);
       _isActionLoading = false;
       notifyListeners();
       return true;
@@ -300,26 +302,47 @@ class CourseProvider extends ChangeNotifier {
     try {
       final response = await _apiClient.patch(ApiEndpoints.completeLesson(lessonId));
       final data = response.data['data'];
-      if (data != null) {
-        _currentProgress = CourseProgressModel.fromJson(data as Map<String, dynamic>);
+
+      int? backendPct;
+      int? backendTotal;
+      int? backendCompleted;
+
+      // Backend returns { lessonProgress: {...}, courseProgress: {progressPercentage, totalLessons, completedLessons} }
+      if (data != null && data['courseProgress'] is Map<String, dynamic>) {
+        final cp = data['courseProgress'] as Map<String, dynamic>;
+        backendPct = (cp['progressPercentage'] as num?)?.toInt();
+        backendTotal = (cp['totalLessons'] as num?)?.toInt();
+        backendCompleted = (cp['completedLessons'] as num?)?.toInt();
       }
 
-      // Mark locally
-      _markLessonCompletedLocally(lessonId);
+      // Mark locally with exact backend stats or fallback calculated stats
+      _markLessonCompletedLocally(
+        lessonId,
+        courseId: courseId,
+        explicitPercentage: backendPct,
+        explicitTotal: backendTotal,
+        explicitCompleted: backendCompleted,
+      );
 
       _isActionLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
       // Offline fallback: mark lesson completed locally
-      _markLessonCompletedLocally(lessonId);
+      _markLessonCompletedLocally(lessonId, courseId: courseId);
       _isActionLoading = false;
       notifyListeners();
       return true;
     }
   }
 
-  void _markLessonCompletedLocally(String lessonId) {
+  void _markLessonCompletedLocally(
+    String lessonId, {
+    String? courseId,
+    int? explicitPercentage,
+    int? explicitTotal,
+    int? explicitCompleted,
+  }) {
     List<SectionModel> updated = [];
     int total = 0;
     int completed = 0;
@@ -337,16 +360,29 @@ class CourseProvider extends ChangeNotifier {
     }
     _sections = updated;
 
-    final pct = total > 0 ? ((completed / total) * 100).round() : 0;
+    final finalTotal = explicitTotal ?? (total > 0 ? total : (_currentProgress?.totalLessons ?? 0));
+    final finalCompleted = explicitCompleted ?? (completed > 0 ? completed : (_currentProgress?.completedLessons ?? 0));
+    final finalPct = explicitPercentage ?? (finalTotal > 0 ? ((finalCompleted / finalTotal) * 100).round() : 0);
     final Map<String, String> statusMap = Map.from(_currentProgress?.lessonStatusMap ?? {});
     statusMap[lessonId] = 'COMPLETED';
 
     _currentProgress = CourseProgressModel(
-      progressPercentage: pct,
-      totalLessons: total,
-      completedLessons: completed,
+      progressPercentage: finalPct,
+      totalLessons: finalTotal,
+      completedLessons: finalCompleted,
       lessonStatusMap: statusMap,
     );
+
+    // Also update _myEnrollments so MyCoursesScreen and dashboard show updated progress immediately
+    if (courseId != null) {
+      final enrollIndex = _myEnrollments.indexWhere((e) => e.courseId == courseId);
+      if (enrollIndex != -1) {
+        _myEnrollments[enrollIndex] = _myEnrollments[enrollIndex].copyWith(
+          progressPercentage: finalPct,
+          status: finalPct >= 100 ? 'COMPLETED' : 'ACTIVE',
+        );
+      }
+    }
   }
 
   bool isEnrolled(String courseId) {

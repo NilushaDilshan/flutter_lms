@@ -133,7 +133,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ElevatedButton(
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
+              // Capture context-sensitive objects BEFORE any async gap
               final messenger = ScaffoldMessenger.of(context);
+              final authProvider = context.read<AuthProvider>();
+              final navigator = Navigator.of(context);
               try {
                 await context.read<ProfileProvider>().changePassword(
                   currentPassword: currentPassController.text,
@@ -141,14 +144,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   confirmPassword: confirmPassController.text,
                 );
                 if (ctx.mounted) {
-                  Navigator.of(ctx).pop();
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      backgroundColor: AppColors.success,
-                      content: Text('Password changed successfully!'),
-                    ),
-                  );
+                  Navigator.of(ctx).pop(); // Close the dialog
                 }
+                // Backend invalidates all tokens after password change.
+                // Log out, clear stored tokens, then navigate to login.
+                await authProvider.logout();
+                messenger.showSnackBar(
+                  const SnackBar(
+                    backgroundColor: AppColors.success,
+                    duration: Duration(seconds: 4),
+                    content: Text(
+                      '✅ Password changed! Please sign in with your new password.',
+                    ),
+                  ),
+                );
+                navigator.pushNamedAndRemoveUntil(
+                  AppRoutes.login,
+                  (route) => false,
+                );
+
               } catch (e) {
                 if (!ctx.mounted) return;
                 final isOffline = e is ApiException &&
