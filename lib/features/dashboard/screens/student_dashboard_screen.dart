@@ -171,7 +171,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           message: 'Explore published courses to begin your learning journey and start gaining certifications.',
           actionText: 'Browse Courses',
           onAction: () {
-            setState(() => _viewStateMode = 0);
+            Navigator.of(context).pushNamed(AppRoutes.courses);
           },
         );
       case 3:
@@ -195,8 +195,10 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Continue Learning Featured Card
-          Container(
-            width: double.infinity,
+          GestureDetector(
+            onTap: () => Navigator.of(context).pushNamed(AppRoutes.courses),
+            child: Container(
+              width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
@@ -268,7 +270,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+        ),
+        const SizedBox(height: 20),
 
           // Summary Stats Cards
           Row(
@@ -287,7 +290,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             title: 'My Courses',
             subtitle: 'Courses you are currently enrolled in',
             actionText: 'View All',
-            onAction: () {},
+            onAction: () => Navigator.of(context).pushNamed(AppRoutes.myCourses),
           ),
           _buildCourseItem(
             'Flutter & Dart Masterclass',

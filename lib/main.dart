@@ -5,6 +5,7 @@ import 'core/routes/app_routes.dart';
 import 'core/routes/route_generator.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/providers/auth_provider.dart';
+import 'features/courses/providers/course_provider.dart';
 import 'features/profile/providers/profile_provider.dart';
 
 void main() {
@@ -14,6 +15,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(create: (_) => CourseProvider()),
       ],
       child: const FlutterLmsApp(),
     ),

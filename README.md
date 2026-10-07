@@ -124,7 +124,16 @@ docker restart flutter-lms-backend
   - Connected `LoginScreen` to `AuthProvider` with real backend call, role-based navigation, and offline demo fallback.
   - Added Profile icon to all three role dashboards navigating to `/profile`.
   - Expanded test suite to 16 tests across `widget_test.dart` and `api_client_test.dart` — all passing.
-- [ ] **Day 6: Course Browse, Enrollment, Curriculum, Lessons and Progress**
+- [x] **Day 6: Course Browse, Enrollment, Curriculum, Lessons and Progress**
+  - Implemented `CategoryModel`, `CourseModel`, `SectionModel`, `LessonModel` (with `LessonType` for TEXT, VIDEO, DOCUMENT), `EnrollmentModel`, and `CourseProgressModel`.
+  - Built `CourseProvider` integrating backend API endpoints for categories, published courses, course details, curriculum sections, enrollments, and progress tracking.
+  - Created `CourseCatalogScreen` with real-time search, dynamic category filter chips, difficulty level filter, and responsive course cards.
+  - Created `CourseDetailScreen` with collapsible hero thumbnail, metadata overview, interactive curriculum accordion, and sticky bottom enrollment bar.
+  - Created `LessonPlayerScreen` supporting all three lesson modalities: Video Player with progress slider, Text reading view with rich formatting, and Document view with download/view capabilities.
+  - Implemented lesson progress tracking: automated lesson start marking and "Mark as Completed" with backend sync (`PATCH /api/v1/lessons/:id/complete`).
+  - Created `MyCoursesScreen` displaying enrolled courses with completion percentages and direct resume actions.
+  - Registered `CourseProvider` in `MultiProvider` and mapped all routes (`/courses`, `/course-detail`, `/lesson-player`, `/my-courses`) in `RouteGenerator`.
+  - Expanded unit and widget test suite to 28 passing tests in total (`courses_test.dart`, `widget_test.dart`, and `api_client_test.dart`).
 - [ ] **Day 7: Quizzes, Assignments, Reviews, Notifications and Student Profile UX**
 - [ ] **Day 8: Instructor Course Building and Learner Management**
 - [ ] **Day 9: Admin Management, State Management, Bottom Navigation and Animations**

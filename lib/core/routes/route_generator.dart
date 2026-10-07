@@ -3,6 +3,11 @@ import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/otp_verification_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
+import '../../features/courses/models/lesson_model.dart';
+import '../../features/courses/screens/course_catalog_screen.dart';
+import '../../features/courses/screens/course_detail_screen.dart';
+import '../../features/courses/screens/lesson_player_screen.dart';
+import '../../features/courses/screens/my_courses_screen.dart';
 import '../../features/dashboard/screens/admin_dashboard_screen.dart';
 import '../../features/dashboard/screens/instructor_dashboard_screen.dart';
 import '../../features/dashboard/screens/student_dashboard_screen.dart';
@@ -82,6 +87,41 @@ class RouteGenerator {
         final email = args?['email'] as String? ?? 'admin@lms.com';
         return MaterialPageRoute(
           builder: (_) => AdminDashboardScreen(adminEmail: email),
+          settings: settings,
+        );
+
+      case AppRoutes.courses:
+        return MaterialPageRoute(
+          builder: (_) => const CourseCatalogScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.courseDetail:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final courseId = args?['courseId'] as String? ?? '';
+        final title = args?['title'] as String?;
+        return MaterialPageRoute(
+          builder: (_) => CourseDetailScreen(courseId: courseId, initialTitle: title),
+          settings: settings,
+        );
+
+      case AppRoutes.lessonPlayer:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final courseId = args?['courseId'] as String? ?? '';
+        final lesson = args?['lesson'] as LessonModel?;
+        if (lesson == null) {
+          return MaterialPageRoute(
+            builder: (_) => const Scaffold(body: Center(child: Text('Lesson not specified'))),
+          );
+        }
+        return MaterialPageRoute(
+          builder: (_) => LessonPlayerScreen(courseId: courseId, lesson: lesson),
+          settings: settings,
+        );
+
+      case AppRoutes.myCourses:
+        return MaterialPageRoute(
+          builder: (_) => const MyCoursesScreen(),
           settings: settings,
         );
 

@@ -49,10 +49,10 @@ class ApiEndpoints {
   static String completeLesson(String id) => '/api/v1/lessons/$id/complete';
 
   // Enrollments & Progress
-  static const String myEnrollments = '/api/v1/enrollments/my-courses';
-  static const String enrollCourse = '/api/v1/enrollments';
-  static String courseProgress(String courseId) => '/api/v1/enrollments/$courseId/progress';
-  static String courseEnrollments(String courseId) => '/api/v1/enrollments/course/$courseId';
+  static const String myEnrollments = '/api/v1/enrollments/me';
+  static String enrollCourse(String courseId) => '/api/v1/courses/$courseId/enroll';
+  static String courseProgress(String courseId) => '/api/v1/courses/$courseId/progress/me';
+  static String courseEnrollments(String courseId) => '/api/v1/courses/$courseId/enrollments';
 
   // Quizzes & Attempts
   static String sectionQuizzes(String sectionId) => '/api/v1/sections/$sectionId/quizzes';

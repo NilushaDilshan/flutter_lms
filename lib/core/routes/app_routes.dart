@@ -14,4 +14,10 @@ class AppRoutes {
   static const String studentDashboard = '/student/dashboard';
   static const String instructorDashboard = '/instructor/dashboard';
   static const String adminDashboard = '/admin/dashboard';
+
+  // Courses & Curriculum
+  static const String courses = '/courses';
+  static const String courseDetail = '/course-detail';
+  static const String lessonPlayer = '/lesson-player';
+  static const String myCourses = '/my-courses';
 }
