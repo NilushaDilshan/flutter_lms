@@ -61,11 +61,34 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
 
-        // Real server authentication rejection (e.g., wrong password 401 or unverified email 403)
-        final isAuthRejection = e is ApiException &&
-            (e.statusCode == 401 ||
-                (e.statusCode == 403 &&
-                    e.message.toLowerCase().contains('verify')));
+        // Backend rejected login because email is not verified (403 EMAIL_NOT_VERIFIED)
+        final isEmailNotVerified = e is ApiException &&
+            e.statusCode == 403 &&
+            e.message.toLowerCase().contains('verify');
+
+        if (isEmailNotVerified) {
+          // Redirect to OTP verification so user can verify email then log in
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              content: Text(
+                '📧 Please verify your email first. Enter the OTP sent to your inbox.',
+              ),
+            ),
+          );
+          Navigator.of(context).pushNamed(
+            AppRoutes.verifyOtp,
+            arguments: {
+              'email': email,
+              'role': 'STUDENT',
+            },
+          );
+          return;
+        }
+
+        // Real server authentication rejection (wrong password, suspended account)
+        final isAuthRejection = e is ApiException && e.statusCode == 401;
 
         if (!isAuthRejection) {
           // Offline / Demo fallback: Determine role based on email address
@@ -100,12 +123,16 @@ class _LoginScreenState extends State<LoginScreen> {
             arguments: arguments,
           );
         } else {
-          // Real server error (e.g. wrong password, unverified email)
+          // Real server error (e.g. wrong password)
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: AppColors.error,
               behavior: SnackBarBehavior.floating,
-              content: Text(e.message),
+              content: Text(
+                // isAuthRejection = (e is ApiException && e.statusCode == 401)
+                // so e is already promoted to ApiException here
+                (e as dynamic).message as String? ?? 'Login failed. Please check your credentials.',
+              ),
             ),
           );
         }

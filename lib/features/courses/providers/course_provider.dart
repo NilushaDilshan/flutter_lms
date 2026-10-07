@@ -276,10 +276,18 @@ class CourseProvider extends ChangeNotifier {
           notifyListeners();
           return true;
         } else if (e.statusCode == 403) {
-          // 403 Role / Ownership error (e.g. instructors or admins cannot enroll as students)
-          _errorMessage = e.message.isNotEmpty
-              ? e.message
-              : 'Enrollment restricted: Only student accounts may enroll in courses.';
+          // 403 can mean either EMAIL_NOT_VERIFIED or role restriction (Instructor/Admin)
+          final isEmailNotVerified = e.message.toLowerCase().contains('verify') ||
+              e.message.toLowerCase().contains('email');
+          if (isEmailNotVerified) {
+            _errorMessage = 'Please verify your email address before enrolling in courses. '
+                'Check your inbox for the verification OTP.';
+          } else {
+            // Instructor or Admin accounts cannot enroll as students
+            _errorMessage = e.message.isNotEmpty
+                ? e.message
+                : 'Enrollment restricted: Only student accounts may enroll in courses.';
+          }
           _isActionLoading = false;
           notifyListeners();
           return false;
