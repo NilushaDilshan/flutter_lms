@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
+import '../../../core/api/api_exception.dart';
 import '../models/category_model.dart';
 import '../models/course_model.dart';
 import '../models/enrollment_model.dart';
@@ -23,6 +24,11 @@ class CourseProvider extends ChangeNotifier {
   bool _isActionLoading = false;
   String? _errorMessage;
 
+  int _currentPage = 1;
+  int _totalPages = 1;
+  bool _hasNextPage = false;
+  bool _isLoadingMore = false;
+
   String? _selectedCategoryId;
   String? _selectedLevel;
   String _searchQuery = '';
@@ -41,6 +47,11 @@ class CourseProvider extends ChangeNotifier {
   bool get isLoadingDetails => _isLoadingDetails;
   bool get isActionLoading => _isActionLoading;
   String? get errorMessage => _errorMessage;
+
+  int get currentPage => _currentPage;
+  int get totalPages => _totalPages;
+  bool get hasNextPage => _hasNextPage;
+  bool get isLoadingMore => _isLoadingMore;
 
   String? get selectedCategoryId => _selectedCategoryId;
   String? get selectedLevel => _selectedLevel;
@@ -96,14 +107,18 @@ class CourseProvider extends ChangeNotifier {
   }
 
   // ── LOAD PUBLISHED COURSES ────────────────────────────────────────────────
-  Future<void> loadCourses() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> loadCourses({bool refresh = true}) async {
+    if (refresh) {
+      _isLoading = true;
+      _currentPage = 1;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     try {
       final Map<String, dynamic> queryParams = {
-        'limit': 30,
+        'page': _currentPage,
+        'limit': 10,
       };
 
       if (_selectedCategoryId != null && _selectedCategoryId!.isNotEmpty) {
@@ -122,19 +137,46 @@ class CourseProvider extends ChangeNotifier {
       );
 
       final data = response.data['data'];
-      if (data != null && data['courses'] is List) {
-        _courses = (data['courses'] as List)
-            .whereType<Map<String, dynamic>>()
-            .map((c) => CourseModel.fromJson(c))
-            .toList();
+      if (data != null) {
+        if (data['courses'] is List) {
+          final fetched = (data['courses'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map((c) => CourseModel.fromJson(c))
+              .toList();
+          if (refresh) {
+            _courses = fetched;
+          } else {
+            _courses.addAll(fetched);
+          }
+        }
+        if (data['pagination'] is Map<String, dynamic>) {
+          final pag = data['pagination'] as Map<String, dynamic>;
+          _currentPage = (pag['page'] as num?)?.toInt() ?? _currentPage;
+          _totalPages = (pag['totalPages'] as num?)?.toInt() ?? 1;
+          _hasNextPage = pag['hasNextPage'] as bool? ?? false;
+        } else {
+          _hasNextPage = false;
+        }
       }
     } catch (e) {
       // Fallback demo courses if offline
-      _courses = _getFilteredDemoCourses();
+      if (refresh) {
+        _courses = _getFilteredDemoCourses();
+        _hasNextPage = false;
+      }
     } finally {
       _isLoading = false;
+      _isLoadingMore = false;
       notifyListeners();
     }
+  }
+
+  Future<void> loadMoreCourses() async {
+    if (!_hasNextPage || _isLoadingMore || _isLoading) return;
+    _isLoadingMore = true;
+    _currentPage++;
+    notifyListeners();
+    await loadCourses(refresh: false);
   }
 
   // ── LOAD COURSE DETAILS & SECTIONS ────────────────────────────────────────
@@ -224,7 +266,33 @@ class CourseProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      // Offline simulation fallback
+      if (e is ApiException) {
+        if (e.statusCode == 409) {
+          // Already enrolled on backend: sync existing enrollment & progress
+          await loadMyEnrollments();
+          await loadCourseProgress(courseId);
+          _isActionLoading = false;
+          _errorMessage = null;
+          notifyListeners();
+          return true;
+        } else if (e.statusCode == 403) {
+          // 403 Role / Ownership error (e.g. instructors or admins cannot enroll as students)
+          _errorMessage = e.message.isNotEmpty
+              ? e.message
+              : 'Enrollment restricted: Only student accounts may enroll in courses.';
+          _isActionLoading = false;
+          notifyListeners();
+          return false;
+        } else if (e.statusCode != 503 && e.statusCode != 408) {
+          // Real backend validation or client error
+          _errorMessage = e.message;
+          _isActionLoading = false;
+          notifyListeners();
+          return false;
+        }
+      }
+
+      // Offline simulation fallback ONLY if connection timeout / service unavailable
       final demoEnrollment = EnrollmentModel(
         id: 'demo-enroll-${DateTime.now().millisecondsSinceEpoch}',
         studentId: 'student-me',
@@ -323,6 +391,9 @@ class CourseProvider extends ChangeNotifier {
         explicitTotal: backendTotal,
         explicitCompleted: backendCompleted,
       );
+
+      // Refresh official backend-calculated progress directly from server
+      await loadCourseProgress(courseId);
 
       _isActionLoading = false;
       notifyListeners();

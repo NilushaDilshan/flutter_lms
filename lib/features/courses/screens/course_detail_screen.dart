@@ -60,8 +60,22 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   void _openLesson(LessonModel lesson, bool isEnrolled) {
     if (!isEnrolled && !lesson.isPreview) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🔒 Please enroll in the course to unlock this lesson.'),
+        SnackBar(
+          backgroundColor: AppColors.error,
+          content: const Row(
+            children: [
+              Icon(Icons.lock_outline, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('🔒 Enrollment required: Please enroll to unlock this lesson.'),
+              ),
+            ],
+          ),
+          action: SnackBarAction(
+            label: 'ENROLL',
+            textColor: Colors.white,
+            onPressed: _handleEnroll,
+          ),
         ),
       );
       return;
@@ -263,21 +277,49 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       );
     }
 
+    final totalLessons = sections.fold<int>(0, (sum, s) => sum + s.lessons.length);
+    final totalDuration = sections.fold<int>(
+      0,
+      (sum, s) => sum + s.lessons.fold<int>(0, (lSum, l) => lSum + l.durationMinutes),
+    );
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            final section = sections[index];
+            if (index == 0) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                elevation: 0,
+                color: Colors.blue.shade50,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.blue.shade100),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildSummaryStat(Icons.view_module_outlined, '${sections.length}', 'Sections'),
+                      _buildSummaryStat(Icons.play_lesson_outlined, '$totalLessons', 'Lessons'),
+                      _buildSummaryStat(Icons.schedule_outlined, '$totalDuration min', 'Duration'),
+                    ],
+                  ),
+                ),
+              );
+            }
+            final section = sections[index - 1];
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: ExpansionTile(
-                initiallyExpanded: index == 0,
+                initiallyExpanded: index == 1,
                 leading: CircleAvatar(
                   backgroundColor: AppColors.primary.withAlpha(30),
                   radius: 16,
-                  child: Text('${index + 1}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13)),
+                  child: Text('$index', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13)),
                 ),
                 title: Text(
                   section.title,
@@ -294,9 +336,21 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               ),
             );
           },
-          childCount: sections.length,
+          childCount: sections.length + 1,
         ),
       ),
+    );
+  }
+
+  Widget _buildSummaryStat(IconData icon, String value, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20, color: AppColors.primary),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark)),
+        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+      ],
     );
   }
 
@@ -381,6 +435,61 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+
+            // Instructor Information
+            if (course.instructor != null)
+              Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Course Instructor', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 26,
+                            backgroundColor: AppColors.primary.withAlpha(30),
+                            backgroundImage: (course.instructor!.profileImageUrl != null &&
+                                    course.instructor!.profileImageUrl!.isNotEmpty)
+                                ? NetworkImage(course.instructor!.profileImageUrl!)
+                                : null,
+                            child: (course.instructor!.profileImageUrl == null ||
+                                    course.instructor!.profileImageUrl!.isEmpty)
+                                ? Text(
+                                    course.instructor!.fullName.isNotEmpty
+                                        ? course.instructor!.fullName[0].toUpperCase()
+                                        : 'I',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  course.instructor!.fullName,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Lead Instructor & Course Author',
+                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             const SizedBox(height: 12),
 
             // Learning Outcomes

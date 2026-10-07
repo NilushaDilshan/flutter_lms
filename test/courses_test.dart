@@ -12,6 +12,7 @@ import 'package:flutter_lms/features/courses/screens/course_catalog_screen.dart'
 import 'package:flutter_lms/features/courses/screens/course_detail_screen.dart';
 import 'package:flutter_lms/features/courses/screens/lesson_player_screen.dart';
 import 'package:flutter_lms/features/courses/screens/my_courses_screen.dart';
+import 'package:flutter_lms/features/courses/widgets/course_card.dart';
 
 void main() {
   group('Day 6: Models Unit Tests', () {
@@ -278,6 +279,60 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('My Enrolled Courses'), findsOneWidget);
+    });
+
+    testWidgets('CourseCard widget renders course details and responds to tap', (WidgetTester tester) async {
+      bool tapped = false;
+      final course = CourseModel(
+        id: 'c-card-test',
+        title: 'Full-Stack Development with Flutter',
+        slug: 'full-stack-flutter',
+        categoryName: 'Mobile Development',
+        level: 'INTERMEDIATE',
+        isFree: true,
+        price: 0,
+        averageRating: 4.8,
+        reviewCount: 42,
+        totalEnrollments: 350,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CourseCard(
+              course: course,
+              isEnrolled: false,
+              onTap: () {
+                tapped = true;
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Full-Stack Development with Flutter'), findsWidgets);
+      expect(find.text('INTERMEDIATE'), findsOneWidget);
+      expect(find.text('FREE'), findsOneWidget);
+      expect(find.text('350'), findsOneWidget);
+
+      await tester.tap(find.byType(CourseCard));
+      expect(tapped, isTrue);
+    });
+
+    test('CourseProvider pagination and filters update state correctly', () {
+      final provider = CourseProvider();
+      expect(provider.currentPage, 1);
+      expect(provider.hasNextPage, isFalse);
+      expect(provider.isLoadingMore, isFalse);
+
+      provider.setCategoryFilter('cat-1');
+      expect(provider.selectedCategoryId, 'cat-1');
+
+      provider.setLevelFilter('BEGINNER');
+      expect(provider.selectedLevel, 'BEGINNER');
+
+      provider.setSearchQuery('Flutter');
+      expect(provider.searchQuery, 'Flutter');
     });
   });
 }
