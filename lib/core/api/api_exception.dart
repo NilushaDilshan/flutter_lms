@@ -3,12 +3,14 @@ import 'package:dio/dio.dart';
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
+  final String? code;
   final dynamic data;
   final List<String> errors;
 
   ApiException({
     required this.message,
     this.statusCode,
+    this.code,
     this.data,
     this.errors = const [],
   });
@@ -58,13 +60,16 @@ class ApiException implements Exception {
     final responseData = response?.data;
 
     String message = 'An unexpected error occurred. Please try again.';
+    String? code;
     List<String> errors = [];
 
     if (responseData is Map<String, dynamic>) {
-      // Backend pattern: { status: 'error', message: '...', errors: [...] }
+      // Backend pattern: { status: 'error', message: '...', code: '...', errors: [...] }
       if (responseData['message'] is String && (responseData['message'] as String).isNotEmpty) {
         message = responseData['message'];
       }
+
+      code = responseData['code']?.toString() ?? responseData['errorCode']?.toString();
 
       if (responseData['errors'] is List) {
         errors = (responseData['errors'] as List)
@@ -111,6 +116,7 @@ class ApiException implements Exception {
     return ApiException(
       message: message,
       statusCode: statusCode,
+      code: code,
       data: responseData,
       errors: errors,
     );

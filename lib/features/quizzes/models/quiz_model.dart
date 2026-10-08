@@ -115,6 +115,8 @@ class QuizAttemptModel {
   final String id;
   final String quizId;
   final String studentId;
+  final String? studentName;
+  final String? studentEmail;
   final int? score;
   final int? totalMarks;
   final double? percentage;
@@ -128,6 +130,8 @@ class QuizAttemptModel {
     required this.id,
     required this.quizId,
     required this.studentId,
+    this.studentName,
+    this.studentEmail,
     this.score,
     this.totalMarks,
     this.percentage,
@@ -141,10 +145,27 @@ class QuizAttemptModel {
   bool get isSubmitted => status == 'SUBMITTED';
 
   factory QuizAttemptModel.fromJson(Map<String, dynamic> json) {
+    String sId = '';
+    String? sName;
+    String? sEmail;
+    if (json['studentId'] is Map<String, dynamic>) {
+      final sMap = json['studentId'] as Map<String, dynamic>;
+      sId = sMap['id']?.toString() ?? sMap['_id']?.toString() ?? '';
+      final first = sMap['firstName']?.toString() ?? '';
+      final last = sMap['lastName']?.toString() ?? '';
+      final full = '$first $last'.trim();
+      sName = full.isNotEmpty ? full : 'Student';
+      sEmail = sMap['email']?.toString();
+    } else {
+      sId = json['studentId']?.toString() ?? '';
+    }
+
     return QuizAttemptModel(
       id: json['id'] as String? ?? json['_id'] as String? ?? '',
       quizId: json['quizId'] as String? ?? '',
-      studentId: json['studentId'] as String? ?? '',
+      studentId: sId,
+      studentName: sName,
+      studentEmail: sEmail,
       score: (json['score'] as num?)?.toInt(),
       totalMarks: (json['totalMarks'] as num?)?.toInt(),
       percentage: (json['percentage'] as num?)?.toDouble(),

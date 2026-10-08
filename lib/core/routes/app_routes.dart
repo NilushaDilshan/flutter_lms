@@ -27,4 +27,11 @@ class AppRoutes {
   static const String assignments = '/assignments';
   static const String assignmentDetail = '/assignment-detail';
   static const String notifications = '/notifications';
+
+  // Day 8: Instructor Course Building and Management
+  static const String instructorCourses = '/instructor/courses';
+  static const String instructorCourseCreate = '/instructor/courses/create';
+  static const String instructorCourseStudio = '/instructor/courses/studio';
+  static const String instructorSubmissions = '/instructor/submissions';
+  static const String instructorQuizAttempts = '/instructor/quiz-attempts';
 }

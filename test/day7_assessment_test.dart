@@ -7,7 +7,6 @@ import 'package:flutter_lms/features/assignments/models/assignment_model.dart';
 import 'package:flutter_lms/features/assignments/providers/assignment_provider.dart';
 import 'package:flutter_lms/features/assignments/screens/assignment_list_screen.dart';
 import 'package:flutter_lms/features/courses/models/review_model.dart';
-import 'package:flutter_lms/features/courses/providers/course_provider.dart';
 import 'package:flutter_lms/features/notifications/models/notification_model.dart';
 import 'package:flutter_lms/features/notifications/providers/notification_provider.dart';
 import 'package:flutter_lms/features/notifications/screens/notification_screen.dart';

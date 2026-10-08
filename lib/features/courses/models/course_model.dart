@@ -124,6 +124,54 @@ class CourseModel {
     );
   }
 
+  bool get isDraft => status.toUpperCase() == 'DRAFT';
+  bool get isPublished => status.toUpperCase() == 'PUBLISHED';
+  bool get isArchived => status.toUpperCase() == 'ARCHIVED';
+
+  CourseModel copyWith({
+    String? id,
+    String? title,
+    String? slug,
+    String? shortDescription,
+    String? description,
+    String? level,
+    String? language,
+    bool? isFree,
+    num? price,
+    String? thumbnailUrl,
+    double? averageRating,
+    int? reviewCount,
+    int? totalEnrollments,
+    String? categoryId,
+    String? categoryName,
+    CourseInstructor? instructor,
+    List<String>? learningOutcomes,
+    List<String>? requirements,
+    String? status,
+  }) {
+    return CourseModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      slug: slug ?? this.slug,
+      shortDescription: shortDescription ?? this.shortDescription,
+      description: description ?? this.description,
+      level: level ?? this.level,
+      language: language ?? this.language,
+      isFree: isFree ?? this.isFree,
+      price: price ?? this.price,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      averageRating: averageRating ?? this.averageRating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      totalEnrollments: totalEnrollments ?? this.totalEnrollments,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
+      instructor: instructor ?? this.instructor,
+      learningOutcomes: learningOutcomes ?? this.learningOutcomes,
+      requirements: requirements ?? this.requirements,
+      status: status ?? this.status,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

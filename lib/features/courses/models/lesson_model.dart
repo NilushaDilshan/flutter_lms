@@ -69,10 +69,16 @@ class LessonModel {
   LessonModel copyWith({
     String? title,
     String? description,
+    LessonType? lessonType,
     bool? isCompleted,
     String? textContent,
     String? videoUrl,
     String? documentUrl,
+    String? documentName,
+    int? durationMinutes,
+    int? order,
+    bool? isPreview,
+    bool? isPublished,
   }) {
     return LessonModel(
       id: id,
@@ -80,15 +86,15 @@ class LessonModel {
       sectionId: sectionId,
       title: title ?? this.title,
       description: description ?? this.description,
-      lessonType: lessonType,
+      lessonType: lessonType ?? this.lessonType,
       textContent: textContent ?? this.textContent,
       videoUrl: videoUrl ?? this.videoUrl,
       documentUrl: documentUrl ?? this.documentUrl,
-      documentName: documentName,
-      durationMinutes: durationMinutes,
-      order: order,
-      isPreview: isPreview,
-      isPublished: isPublished,
+      documentName: documentName ?? this.documentName,
+      durationMinutes: durationMinutes ?? this.durationMinutes,
+      order: order ?? this.order,
+      isPreview: isPreview ?? this.isPreview,
+      isPublished: isPublished ?? this.isPublished,
       isCompleted: isCompleted ?? this.isCompleted,
     );
   }

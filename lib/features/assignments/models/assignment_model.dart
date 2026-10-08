@@ -43,6 +43,9 @@ class AssignmentSubmissionModel {
   final String id;
   final String assignmentId;
   final String studentId;
+  final String? studentName;
+  final String? studentEmail;
+  final String? studentProfileImageUrl;
   final String? textAnswer;
   final String? fileUrl;
   final String? fileName;
@@ -56,6 +59,9 @@ class AssignmentSubmissionModel {
     required this.id,
     required this.assignmentId,
     required this.studentId,
+    this.studentName,
+    this.studentEmail,
+    this.studentProfileImageUrl,
     this.textAnswer,
     this.fileUrl,
     this.fileName,
@@ -72,10 +78,30 @@ class AssignmentSubmissionModel {
   bool get canEdit => !isGraded;
 
   factory AssignmentSubmissionModel.fromJson(Map<String, dynamic> json) {
+    String sId = '';
+    String? sName;
+    String? sEmail;
+    String? sAvatar;
+    if (json['studentId'] is Map<String, dynamic>) {
+      final sMap = json['studentId'] as Map<String, dynamic>;
+      sId = sMap['id']?.toString() ?? sMap['_id']?.toString() ?? '';
+      final first = sMap['firstName']?.toString() ?? '';
+      final last = sMap['lastName']?.toString() ?? '';
+      final full = '$first $last'.trim();
+      sName = full.isNotEmpty ? full : 'Student';
+      sEmail = sMap['email']?.toString();
+      sAvatar = sMap['profileImageUrl']?.toString() ?? sMap['profileImage']?.toString();
+    } else {
+      sId = json['studentId']?.toString() ?? '';
+    }
+
     return AssignmentSubmissionModel(
       id: json['id'] as String? ?? json['_id'] as String? ?? '',
       assignmentId: json['assignmentId'] as String? ?? '',
-      studentId: json['studentId'] as String? ?? '',
+      studentId: sId,
+      studentName: sName,
+      studentEmail: sEmail,
+      studentProfileImageUrl: sAvatar,
       textAnswer: json['textAnswer'] as String?,
       fileUrl: json['fileUrl'] as String?,
       fileName: json['fileName'] as String?,

@@ -22,6 +22,8 @@ class SectionModel {
   SectionModel copyWith({
     String? title,
     String? description,
+    int? order,
+    bool? isPublished,
     List<LessonModel>? lessons,
   }) {
     return SectionModel(
@@ -29,8 +31,8 @@ class SectionModel {
       courseId: courseId,
       title: title ?? this.title,
       description: description ?? this.description,
-      order: order,
-      isPublished: isPublished,
+      order: order ?? this.order,
+      isPublished: isPublished ?? this.isPublished,
       lessons: lessons ?? this.lessons,
     );
   }

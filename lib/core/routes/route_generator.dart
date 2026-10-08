@@ -20,6 +20,11 @@ import '../../features/profile/screens/profile_screen.dart';
 import '../../features/quizzes/models/quiz_model.dart';
 import '../../features/quizzes/screens/quiz_attempt_screen.dart';
 import '../../features/quizzes/screens/quiz_list_screen.dart';
+import '../../features/courses/models/course_model.dart';
+import '../../features/instructor/screens/course_create_edit_screen.dart';
+import '../../features/instructor/screens/course_studio_screen.dart';
+import '../../features/instructor/screens/instructor_quiz_attempts_screen.dart';
+import '../../features/instructor/screens/instructor_submissions_screen.dart';
 import '../../features/splash/screens/splash_screen.dart';
 import 'app_routes.dart';
 
@@ -172,6 +177,55 @@ class RouteGenerator {
       case AppRoutes.notifications:
         return MaterialPageRoute(
           builder: (_) => const NotificationScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.instructorCourses:
+        return MaterialPageRoute(
+          builder: (_) => const InstructorDashboardScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.instructorCourseCreate:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final course = args?['course'] as CourseModel?;
+        return MaterialPageRoute(
+          builder: (_) => CourseCreateEditScreen(courseToEdit: course),
+          settings: settings,
+        );
+
+      case AppRoutes.instructorCourseStudio:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final courseId = args?['courseId'] as String? ?? '';
+        final title = args?['title'] as String?;
+        return MaterialPageRoute(
+          builder: (_) => CourseStudioScreen(courseId: courseId, initialTitle: title),
+          settings: settings,
+        );
+
+      case AppRoutes.instructorSubmissions:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final assignmentId = args?['assignmentId'] as String? ?? '';
+        final title = args?['assignmentTitle'] as String?;
+        final maxMarks = (args?['maxMarks'] as num?)?.toInt() ?? 100;
+        return MaterialPageRoute(
+          builder: (_) => InstructorSubmissionsScreen(
+            assignmentId: assignmentId,
+            assignmentTitle: title,
+            maxMarks: maxMarks,
+          ),
+          settings: settings,
+        );
+
+      case AppRoutes.instructorQuizAttempts:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final quizId = args?['quizId'] as String? ?? '';
+        final title = args?['quizTitle'] as String?;
+        return MaterialPageRoute(
+          builder: (_) => InstructorQuizAttemptsScreen(
+            quizId: quizId,
+            quizTitle: title,
+          ),
           settings: settings,
         );
 

@@ -3,6 +3,9 @@ import 'course_model.dart';
 class EnrollmentModel {
   final String id;
   final String studentId;
+  final String? studentName;
+  final String? studentEmail;
+  final String? studentProfileImageUrl;
   final String courseId;
   final CourseModel? course;
   final String status; // ACTIVE, COMPLETED, CANCELLED
@@ -13,6 +16,9 @@ class EnrollmentModel {
   EnrollmentModel({
     required this.id,
     required this.studentId,
+    this.studentName,
+    this.studentEmail,
+    this.studentProfileImageUrl,
     required this.courseId,
     this.course,
     this.status = 'ACTIVE',
@@ -35,6 +41,23 @@ class EnrollmentModel {
       cId = json['courseId']?.toString() ?? '';
     }
 
+    String sId = '';
+    String? sName;
+    String? sEmail;
+    String? sAvatar;
+    if (json['studentId'] is Map<String, dynamic>) {
+      final sMap = json['studentId'] as Map<String, dynamic>;
+      sId = sMap['id']?.toString() ?? sMap['_id']?.toString() ?? '';
+      final first = sMap['firstName']?.toString() ?? '';
+      final last = sMap['lastName']?.toString() ?? '';
+      final full = '$first $last'.trim();
+      sName = full.isNotEmpty ? full : 'Student';
+      sEmail = sMap['email']?.toString();
+      sAvatar = sMap['profileImageUrl']?.toString() ?? sMap['profileImage']?.toString();
+    } else {
+      sId = json['studentId']?.toString() ?? '';
+    }
+
     DateTime? enrolled;
     if (json['enrolledAt'] != null) {
       enrolled = DateTime.tryParse(json['enrolledAt'].toString());
@@ -47,7 +70,10 @@ class EnrollmentModel {
 
     return EnrollmentModel(
       id: json['id'] as String? ?? json['_id'] as String? ?? '',
-      studentId: json['studentId']?.toString() ?? '',
+      studentId: sId,
+      studentName: sName,
+      studentEmail: sEmail,
+      studentProfileImageUrl: sAvatar,
       courseId: cId,
       course: courseObj,
       status: json['status'] as String? ?? 'ACTIVE',

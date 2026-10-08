@@ -30,20 +30,31 @@ class ApiEndpoints {
   static String categoryById(String id) => '/api/v1/categories/$id';
   static String toggleCategoryStatus(String id) => '/api/v1/categories/$id/status';
 
+  // Instructor Dashboard
+  static const String instructorDashboard = '/api/v1/dashboard/instructor';
+
   // Courses
   static const String publishedCourses = '/api/v1/courses';
-  static const String instructorCourses = '/api/v1/courses/instructor/my-courses';
+  static const String instructorCourses = '/api/v1/courses/instructor/me';
+  static const String createCourse = '/api/v1/courses';
   static const String adminCourses = '/api/v1/courses/admin/all';
   static String courseById(String id) => '/api/v1/courses/$id';
+  static String instructorCourseById(String id) => '/api/v1/courses/instructor/me/$id';
   static String courseThumbnail(String id) => '/api/v1/courses/$id/thumbnail';
   static String publishCourse(String id) => '/api/v1/courses/$id/publish';
   static String archiveCourse(String id) => '/api/v1/courses/$id/archive';
 
   // Sections & Lessons
   static String courseSections(String courseId) => '/api/v1/courses/$courseId/sections';
+  static String createCourseSection(String courseId) => '/api/v1/courses/$courseId/sections';
   static String sectionById(String id) => '/api/v1/sections/$id';
+  static String reorderSection(String id) => '/api/v1/sections/$id/reorder';
   static String sectionLessons(String sectionId) => '/api/v1/sections/$sectionId/lessons';
+  static String createSectionLesson(String sectionId) => '/api/v1/sections/$sectionId/lessons';
   static String lessonById(String id) => '/api/v1/lessons/$id';
+  static String reorderLesson(String id) => '/api/v1/lessons/$id/reorder';
+  static String uploadLessonVideo(String id) => '/api/v1/lessons/$id/video';
+  static String uploadLessonDocument(String id) => '/api/v1/lessons/$id/document';
   static String lessonMedia(String id) => '/api/v1/lessons/$id/media';
   static String startLesson(String id) => '/api/v1/lessons/$id/start';
   static String completeLesson(String id) => '/api/v1/lessons/$id/complete';
@@ -56,16 +67,27 @@ class ApiEndpoints {
 
   // Quizzes & Attempts
   static String courseQuizzes(String courseId) => '/api/v1/courses/$courseId/quizzes';
+  static String createCourseQuiz(String courseId) => '/api/v1/courses/$courseId/quizzes';
+  static String instructorCourseQuizzes(String courseId) => '/api/v1/courses/$courseId/quizzes/instructor';
   static String sectionQuizzes(String sectionId) => '/api/v1/sections/$sectionId/quizzes';
   static String quizById(String id) => '/api/v1/quizzes/$id';
+  static String instructorQuizById(String id) => '/api/v1/quizzes/$id/instructor';
+  static String addQuizQuestion(String quizId) => '/api/v1/quizzes/$quizId/questions';
+  static String quizQuestionById(String id) => '/api/v1/quiz-questions/$id';
+  static String publishQuiz(String id) => '/api/v1/quizzes/$id/publish';
   static String startQuiz(String id) => '/api/v1/quizzes/$id/start';
   static String submitQuizAttempt(String attemptId) => '/api/v1/quiz-attempts/$attemptId/submit';
   static String myQuizAttempts(String quizId) => '/api/v1/quizzes/$quizId/attempts/me';
+  static String instructorQuizAttempts(String quizId) => '/api/v1/quizzes/$quizId/attempts/instructor';
 
   // Assignments & Submissions
   static String courseAssignments(String courseId) => '/api/v1/courses/$courseId/assignments';
+  static String createCourseAssignment(String courseId) => '/api/v1/courses/$courseId/assignments';
+  static String instructorCourseAssignments(String courseId) => '/api/v1/courses/$courseId/assignments/instructor';
   static String sectionAssignments(String sectionId) => '/api/v1/sections/$sectionId/assignments';
   static String assignmentById(String id) => '/api/v1/assignments/$id';
+  static String publishAssignment(String id) => '/api/v1/assignments/$id/publish';
+  static String uploadAssignmentAttachment(String id) => '/api/v1/assignments/$id/attachment';
   static String myAssignmentSubmission(String assignmentId) => '/api/v1/assignments/$assignmentId/submission/me';
   static String submitAssignment(String assignmentId) => '/api/v1/assignments/$assignmentId/submissions';
   static String patchMySubmission(String submissionId) => '/api/v1/submissions/$submissionId';
