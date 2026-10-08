@@ -110,11 +110,15 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
       appBar: AppBar(
         title: Text(_currentLesson.title, style: const TextStyle(fontSize: 15)),
         actions: [
-          if (_currentLesson.isCompleted)
-            const Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Icon(Icons.check_circle, color: AppColors.success),
+          IconButton(
+            icon: Icon(
+              _currentLesson.isCompleted ? Icons.check_circle : Icons.check_circle_outline,
+              color: _currentLesson.isCompleted ? AppColors.success : AppColors.primary,
             ),
+            tooltip: _currentLesson.isCompleted ? 'Completed' : 'Mark as Completed',
+            onPressed: isActionLoading ? null : _handleCompleteLesson,
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -198,7 +202,7 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
 
                   const SizedBox(height: 32),
 
-                  // Complete Lesson Action Button
+                  // Complete Lesson Action Button (in-body)
                   if (!_currentLesson.isCompleted)
                     CustomButton(
                       text: 'Mark Lesson as Completed',
@@ -235,7 +239,7 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Next / Previous Navigation
+                  // Next / Previous Navigation (in-body)
                   Row(
                     children: [
                       Expanded(
@@ -266,6 +270,62 @@ class _LessonPlayerScreenState extends State<LessonPlayerScreen> {
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(20),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.skip_previous_rounded),
+                tooltip: 'Previous Lesson',
+                onPressed: _navigateToPreviousLesson,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: Icon(
+                    _currentLesson.isCompleted ? Icons.check_circle : Icons.check_circle_outline,
+                    size: 18,
+                  ),
+                  label: isActionLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(
+                          _currentLesson.isCompleted ? 'Completed ✓' : 'Mark as Completed',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _currentLesson.isCompleted ? AppColors.success : AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: isActionLoading ? null : _handleCompleteLesson,
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.skip_next_rounded),
+                tooltip: 'Next Lesson',
+                onPressed: _navigateToNextLesson,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

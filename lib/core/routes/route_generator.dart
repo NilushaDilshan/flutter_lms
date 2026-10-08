@@ -11,8 +11,15 @@ import '../../features/courses/screens/my_courses_screen.dart';
 import '../../features/dashboard/screens/admin_dashboard_screen.dart';
 import '../../features/dashboard/screens/instructor_dashboard_screen.dart';
 import '../../features/dashboard/screens/student_dashboard_screen.dart';
+import '../../features/assignments/models/assignment_model.dart';
+import '../../features/assignments/screens/assignment_detail_screen.dart';
+import '../../features/assignments/screens/assignment_list_screen.dart';
+import '../../features/notifications/screens/notification_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/quizzes/models/quiz_model.dart';
+import '../../features/quizzes/screens/quiz_attempt_screen.dart';
+import '../../features/quizzes/screens/quiz_list_screen.dart';
 import '../../features/splash/screens/splash_screen.dart';
 import 'app_routes.dart';
 
@@ -122,6 +129,49 @@ class RouteGenerator {
       case AppRoutes.myCourses:
         return MaterialPageRoute(
           builder: (_) => const MyCoursesScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.quizzes:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final courseId = args?['courseId'] as String?;
+        final courseTitle = args?['courseTitle'] as String?;
+        return MaterialPageRoute(
+          builder: (_) => QuizListScreen(courseId: courseId, courseTitle: courseTitle),
+          settings: settings,
+        );
+
+      case AppRoutes.quizAttempt:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final quizId = args?['quizId'] as String? ?? '';
+        final quizTitle = args?['quizTitle'] as String?;
+        final quiz = args?['quiz'] as QuizModel?;
+        return MaterialPageRoute(
+          builder: (_) => QuizAttemptScreen(quizId: quizId, quizTitle: quizTitle, initialQuiz: quiz),
+          settings: settings,
+        );
+
+      case AppRoutes.assignments:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final courseId = args?['courseId'] as String?;
+        final courseTitle = args?['courseTitle'] as String?;
+        return MaterialPageRoute(
+          builder: (_) => AssignmentListScreen(courseId: courseId, courseTitle: courseTitle),
+          settings: settings,
+        );
+
+      case AppRoutes.assignmentDetail:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final assignmentId = args?['assignmentId'] as String? ?? '';
+        final assignment = args?['assignment'] as AssignmentModel?;
+        return MaterialPageRoute(
+          builder: (_) => AssignmentDetailScreen(assignmentId: assignmentId, initialAssignment: assignment),
+          settings: settings,
+        );
+
+      case AppRoutes.notifications:
+        return MaterialPageRoute(
+          builder: (_) => const NotificationScreen(),
           settings: settings,
         );
 

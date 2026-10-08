@@ -55,16 +55,20 @@ class ApiEndpoints {
   static String courseEnrollments(String courseId) => '/api/v1/courses/$courseId/enrollments';
 
   // Quizzes & Attempts
+  static String courseQuizzes(String courseId) => '/api/v1/courses/$courseId/quizzes';
   static String sectionQuizzes(String sectionId) => '/api/v1/sections/$sectionId/quizzes';
   static String quizById(String id) => '/api/v1/quizzes/$id';
   static String startQuiz(String id) => '/api/v1/quizzes/$id/start';
-  static String submitQuiz(String id) => '/api/v1/quizzes/$id/submit';
-  static String quizAttempts(String id) => '/api/v1/quizzes/$id/attempts';
+  static String submitQuizAttempt(String attemptId) => '/api/v1/quiz-attempts/$attemptId/submit';
+  static String myQuizAttempts(String quizId) => '/api/v1/quizzes/$quizId/attempts/me';
 
   // Assignments & Submissions
+  static String courseAssignments(String courseId) => '/api/v1/courses/$courseId/assignments';
   static String sectionAssignments(String sectionId) => '/api/v1/sections/$sectionId/assignments';
   static String assignmentById(String id) => '/api/v1/assignments/$id';
-  static String submitAssignment(String id) => '/api/v1/assignments/$id/submit';
+  static String myAssignmentSubmission(String assignmentId) => '/api/v1/assignments/$assignmentId/submission/me';
+  static String submitAssignment(String assignmentId) => '/api/v1/assignments/$assignmentId/submissions';
+  static String patchMySubmission(String submissionId) => '/api/v1/submissions/$submissionId';
   static String assignmentSubmissions(String id) => '/api/v1/assignments/$id/submissions';
   static String gradeSubmission(String submissionId) => '/api/v1/submissions/$submissionId/grade';
 
@@ -73,9 +77,9 @@ class ApiEndpoints {
   static String reviewById(String id) => '/api/v1/reviews/$id';
 
   // Notifications
-  static const String notifications = '/api/v1/notifications';
-  static const String unreadNotificationsCount = '/api/v1/notifications/unread-count';
-  static const String markAllNotificationsRead = '/api/v1/notifications/mark-all-read';
+  static const String myNotifications = '/api/v1/notifications/me';
+  static const String unreadNotificationsCount = '/api/v1/notifications/me/unread-count';
+  static const String markAllNotificationsRead = '/api/v1/notifications/me/read-all';
   static String markNotificationRead(String id) => '/api/v1/notifications/$id/read';
   static String deleteNotification(String id) => '/api/v1/notifications/$id';
 

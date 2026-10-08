@@ -20,4 +20,11 @@ class AppRoutes {
   static const String courseDetail = '/course-detail';
   static const String lessonPlayer = '/lesson-player';
   static const String myCourses = '/my-courses';
+
+  // Day 7: Assessments & Communication
+  static const String quizzes = '/quizzes';
+  static const String quizAttempt = '/quiz-attempt';
+  static const String assignments = '/assignments';
+  static const String assignmentDetail = '/assignment-detail';
+  static const String notifications = '/notifications';
 }

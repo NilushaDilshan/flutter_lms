@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/confirmation_dialog.dart';
@@ -7,6 +8,7 @@ import '../../../core/widgets/error_state_widget.dart';
 import '../../../core/widgets/loading_state_widget.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../courses/providers/course_provider.dart';
 
 class StudentDashboardScreen extends StatefulWidget {
   final String studentName;
@@ -23,6 +25,16 @@ class StudentDashboardScreen extends StatefulWidget {
 class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   // 0: Content, 1: Loading Preview, 2: Empty Preview, 3: Error Preview
   int _viewStateMode = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final courseProvider = context.read<CourseProvider>();
+      courseProvider.loadMyEnrollments();
+      courseProvider.loadCourses();
+    });
+  }
 
   Future<void> _handleLogout(BuildContext context) async {
     final confirmed = await ConfirmationDialog.show(
@@ -78,6 +90,16 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             ),
           ),
           const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.explore_outlined, color: AppColors.primary),
+            tooltip: 'Explore Courses',
+            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.courses),
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined, color: AppColors.primary),
+            tooltip: 'Notifications',
+            onPressed: () => Navigator.of(context).pushNamed(AppRoutes.notifications),
+          ),
           IconButton(
             icon: const Icon(Icons.account_circle_outlined, color: AppColors.primary),
             tooltip: 'My Profile',
@@ -189,6 +211,16 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   }
 
   Widget _buildNormalDashboard() {
+    final courseProvider = context.watch<CourseProvider>();
+    final enrollments = courseProvider.myEnrollments;
+    final enrolledCount = enrollments.length;
+    final inProgressCount = enrollments.where((e) => e.progressPercentage > 0 && e.progressPercentage < 100).length;
+    final completedCount = enrollments.where((e) => e.progressPercentage >= 100).length;
+
+    final firstEnrollment = enrollments.isNotEmpty ? enrollments.first : null;
+    final continueTitle = firstEnrollment?.course?.title ?? 'Browse & Enroll in Courses';
+    final continueProgress = (firstEnrollment?.progressPercentage ?? 0) / 100.0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -196,119 +228,210 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         children: [
           // Continue Learning Featured Card
           GestureDetector(
-            onTap: () => Navigator.of(context).pushNamed(AppRoutes.courses),
+            onTap: () {
+              if (firstEnrollment != null) {
+                Navigator.of(context).pushNamed(
+                  AppRoutes.courseDetail,
+                  arguments: {
+                    'courseId': firstEnrollment.courseId,
+                    'title': firstEnrollment.course?.title,
+                  },
+                );
+              } else {
+                Navigator.of(context).pushNamed(AppRoutes.courses);
+              }
+            },
             child: Container(
               width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryLight],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withAlpha(60),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryLight],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(40),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'CONTINUE LEARNING',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withAlpha(60),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(40),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          firstEnrollment != null ? 'CONTINUE LEARNING' : 'START LEARNING',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
-                    ),
-                    const Text(
-                      '45% Completed',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Flutter & Dart Mobile Development',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                      Text(
+                        firstEnrollment != null ? '${firstEnrollment.progressPercentage}% Completed' : 'Tap to Browse',
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Next: Section 3 • Lesson 4 (State Management)',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 14),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: const LinearProgressIndicator(
-                    value: 0.45,
-                    backgroundColor: Colors.white24,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    minHeight: 6,
+                  const SizedBox(height: 12),
+                  Text(
+                    continueTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  Text(
+                    firstEnrollment != null
+                        ? 'Active Enrollment • Tap to resume lessons'
+                        : 'Explore published courses and start your journey',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: continueProgress,
+                      backgroundColor: Colors.white24,
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                      minHeight: 6,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 20),
+          const SizedBox(height: 20),
 
-          // Summary Stats Cards
+          // Quick Action Navigation Buttons
           Row(
             children: [
-              _buildStatCard('Enrolled', '3', Icons.book_outlined, AppColors.studentRole),
+              _buildQuickActionBtn(
+                icon: Icons.search_rounded,
+                label: 'Courses',
+                color: AppColors.primary,
+                onTap: () => Navigator.of(context).pushNamed(AppRoutes.courses),
+              ),
+              const SizedBox(width: 8),
+              _buildQuickActionBtn(
+                icon: Icons.bookmark_added_outlined,
+                label: 'My Courses',
+                color: AppColors.studentRole,
+                onTap: () => Navigator.of(context).pushNamed(AppRoutes.myCourses),
+              ),
+              const SizedBox(width: 8),
+              _buildQuickActionBtn(
+                icon: Icons.quiz_outlined,
+                label: 'Quizzes',
+                color: AppColors.accent,
+                onTap: () => Navigator.of(context).pushNamed(AppRoutes.quizzes),
+              ),
+              const SizedBox(width: 8),
+              _buildQuickActionBtn(
+                icon: Icons.assignment_outlined,
+                label: 'Assignments',
+                color: Colors.purple,
+                onTap: () => Navigator.of(context).pushNamed(AppRoutes.assignments),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Summary Stats Cards (Live Data)
+          Row(
+            children: [
+              _buildStatCard('Enrolled', '$enrolledCount', Icons.book_outlined, AppColors.studentRole),
               const SizedBox(width: 12),
-              _buildStatCard('In Progress', '2', Icons.trending_up, AppColors.accent),
+              _buildStatCard('In Progress', '$inProgressCount', Icons.trending_up, AppColors.accent),
               const SizedBox(width: 12),
-              _buildStatCard('Completed', '1', Icons.verified_outlined, AppColors.success),
+              _buildStatCard('Completed', '$completedCount', Icons.verified_outlined, AppColors.success),
             ],
           ),
           const SizedBox(height: 24),
 
           // My Courses Section
           SectionHeader(
-            title: 'My Courses',
-            subtitle: 'Courses you are currently enrolled in',
+            title: 'My Enrolled Courses',
+            subtitle: 'Courses you are currently learning',
             actionText: 'View All',
             onAction: () => Navigator.of(context).pushNamed(AppRoutes.myCourses),
           ),
-          _buildCourseItem(
-            'Flutter & Dart Masterclass',
-            'Instructor: Nimal Fernando',
-            '12 / 24 Lessons',
-            0.5,
-          ),
-          const SizedBox(height: 12),
-          _buildCourseItem(
-            'UI/UX Design Systems with Material 3',
-            'Instructor: Priya Jayawardena',
-            '4 / 10 Lessons',
-            0.4,
-          ),
+          if (enrollments.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: Column(
+                children: [
+                  const Icon(Icons.school_outlined, size: 40, color: AppColors.primary),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'No Enrolled Courses Yet',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Select a published course from our catalog and click "Enroll Now" to get started.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  ),
+                  const SizedBox(height: 14),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.explore_rounded, size: 16),
+                    label: const Text('Explore Courses Catalog'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.studentRole,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => Navigator.of(context).pushNamed(AppRoutes.courses),
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            for (final enroll in enrollments.take(3)) ...[
+              _buildCourseItem(
+                title: enroll.course?.title ?? 'Course #${enroll.courseId}',
+                instructor: enroll.course?.instructor?.fullName ?? 'Lead Instructor',
+                progressText: '${enroll.progressPercentage}% Completed',
+                progress: enroll.progressPercentage / 100.0,
+                onTap: () {
+                  Navigator.of(context).pushNamed(
+                    AppRoutes.courseDetail,
+                    arguments: {
+                      'courseId': enroll.courseId,
+                      'title': enroll.course?.title,
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ],
+
           const SizedBox(height: 24),
 
           // Recent Activity Section
-          SectionHeader(
+          const SectionHeader(
             title: 'Recent Activity',
             subtitle: 'Your recent submissions and quiz attempts',
           ),
@@ -326,6 +449,41 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             color: AppColors.studentRole,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionBtn({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.cardBorder),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -367,68 +525,82 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     );
   }
 
-  Widget _buildCourseItem(String title, String instructor, String progressText, double progress) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(20),
-              borderRadius: BorderRadius.circular(10),
+  Widget _buildCourseItem({
+    required String title,
+    required String instructor,
+    required String progressText,
+    required double progress,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withAlpha(20),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.school_rounded, color: AppColors.primary),
             ),
-            child: const Icon(Icons.school_rounded, color: AppColors.primary),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  instructor,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          backgroundColor: Colors.grey.shade200,
-                          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.studentRole),
-                          minHeight: 4,
+                  const SizedBox(height: 2),
+                  Text(
+                    instructor,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: Colors.grey.shade200,
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.studentRole),
+                            minHeight: 4,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      progressText,
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 10),
+                      Text(
+                        progressText,
+                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 6),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+          ],
+        ),
       ),
     );
   }

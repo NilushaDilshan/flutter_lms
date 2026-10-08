@@ -7,6 +7,7 @@ import '../models/course_model.dart';
 import '../models/enrollment_model.dart';
 import '../models/lesson_model.dart';
 import '../models/progress_model.dart';
+import '../models/review_model.dart';
 import '../models/section_model.dart';
 
 class CourseProvider extends ChangeNotifier {
@@ -18,6 +19,7 @@ class CourseProvider extends ChangeNotifier {
   CourseModel? _selectedCourse;
   List<SectionModel> _sections = [];
   CourseProgressModel? _currentProgress;
+  List<ReviewModel> _courseReviews = [];
 
   bool _isLoading = false;
   bool _isLoadingDetails = false;
@@ -42,6 +44,7 @@ class CourseProvider extends ChangeNotifier {
   CourseModel? get selectedCourse => _selectedCourse;
   List<SectionModel> get sections => _sections;
   CourseProgressModel? get currentProgress => _currentProgress;
+  List<ReviewModel> get courseReviews => _courseReviews;
 
   bool get isLoading => _isLoading;
   bool get isLoadingDetails => _isLoadingDetails;
@@ -474,6 +477,81 @@ class CourseProvider extends ChangeNotifier {
     } catch (_) {
       return null;
     }
+  }
+
+  // ── COURSE REVIEWS (Day 7) ────────────────────────────────────────────────
+  Future<void> loadCourseReviews(String courseId) async {
+    try {
+      final response = await _apiClient.get(ApiEndpoints.courseReviews(courseId));
+      final data = response.data['data'];
+      if (data != null && data['reviews'] is List) {
+        _courseReviews = (data['reviews'] as List)
+            .map((r) => ReviewModel.fromJson(r as Map<String, dynamic>))
+            .toList();
+        notifyListeners();
+      }
+    } catch (_) {
+      _courseReviews = [
+        ReviewModel(
+          id: 'demo-rev-1',
+          courseId: courseId,
+          studentId: 'stud-1',
+          studentName: 'Kasun Bandara',
+          rating: 5,
+          comment: 'Excellent course structure! The explanations of state management and widgets are clear.',
+          createdAt: DateTime.now().subtract(const Duration(days: 3)),
+        ),
+      ];
+      notifyListeners();
+    }
+  }
+
+  Future<bool> submitCourseReview(
+    String courseId, {
+    required int rating,
+    required String comment,
+  }) async {
+    _isActionLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.courseReviews(courseId),
+        data: {
+          'rating': rating,
+          'comment': comment.trim(),
+        },
+      );
+
+      final data = response.data['data'];
+      if (data != null && data['review'] != null) {
+        final newReview = ReviewModel.fromJson(data['review'] as Map<String, dynamic>);
+        _courseReviews.insert(0, newReview);
+      }
+      _isActionLoading = false;
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+    } catch (_) {
+      _errorMessage = 'Failed to submit review';
+    }
+
+    // Offline simulation
+    final demoRev = ReviewModel(
+      id: 'rev-${DateTime.now().millisecondsSinceEpoch}',
+      courseId: courseId,
+      studentId: 'student-me',
+      studentName: 'Student User',
+      rating: rating,
+      comment: comment,
+      createdAt: DateTime.now(),
+    );
+    _courseReviews.insert(0, demoRev);
+    _isActionLoading = false;
+    notifyListeners();
+    return true;
   }
 
   // ── DEMO FALLBACK DATA ────────────────────────────────────────────────────

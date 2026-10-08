@@ -10,6 +10,7 @@ import '../../../core/widgets/loading_state_widget.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../courses/providers/course_provider.dart';
 import '../providers/profile_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -418,6 +419,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       padding: EdgeInsets.zero,
                     ))
                 .toList(),
+          ),
+          const SizedBox(height: 14),
+          const Divider(),
+          const SizedBox(height: 10),
+          Builder(
+            builder: (context) {
+              final courseProvider = context.watch<CourseProvider>();
+              final enrollments = courseProvider.myEnrollments;
+              final completed = enrollments.where((e) => e.progressPercentage >= 100).length;
+              final inProgress = enrollments.where((e) => e.progressPercentage > 0 && e.progressPercentage < 100).length;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Course Completion Progress:',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green.shade200),
+                          ),
+                          child: Column(
+                            children: [
+                              Text('$completed', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.success)),
+                              const Text('Completed', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: Column(
+                            children: [
+                              Text('$inProgress', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                              const Text('In Progress', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.purple.shade200),
+                          ),
+                          child: Column(
+                            children: [
+                              Text('${enrollments.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple)),
+                              const Text('Total Enrolled', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
