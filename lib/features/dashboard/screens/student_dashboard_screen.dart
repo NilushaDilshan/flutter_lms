@@ -31,6 +31,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final courseProvider = context.read<CourseProvider>();
+      courseProvider.loadStudentDashboard();
       courseProvider.loadMyEnrollments();
       courseProvider.loadCourses();
     });

@@ -260,6 +260,120 @@ class ProfileProvider extends ChangeNotifier {
     }
   }
 
+  // Create or Recreate Student Profile
+  Future<void> createStudentProfile({
+    required String dateOfBirth,
+    required String educationLevel,
+    required List<String> learningGoals,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.studentProfile,
+        data: {
+          'dateOfBirth': dateOfBirth,
+          'educationLevel': educationLevel.trim(),
+          'learningGoals': learningGoals,
+        },
+      );
+      final data = response.data['data'] as Map<String, dynamic>;
+      if (data['profile'] != null) {
+        _studentProfile = StudentProfileModel.fromJson(data['profile'] as Map<String, dynamic>);
+      }
+      _setLoading(false);
+    } on ApiException catch (e) {
+      _setError(e.message);
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  // Delete Student Profile
+  Future<void> deleteStudentProfile() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _apiClient.delete(ApiEndpoints.studentProfile);
+      _studentProfile = null;
+      _setLoading(false);
+    } on ApiException catch (e) {
+      _setError(e.message);
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  // Create or Recreate Instructor Profile
+  Future<void> createInstructorProfile({
+    required String headline,
+    required String qualification,
+    required int experienceYears,
+    required List<String> expertise,
+    required String biography,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.instructorProfile,
+        data: {
+          'headline': headline.trim(),
+          'qualification': qualification.trim(),
+          'experienceYears': experienceYears,
+          'expertise': expertise,
+          'biography': biography.trim(),
+        },
+      );
+      final data = response.data['data'] as Map<String, dynamic>;
+      if (data['profile'] != null) {
+        _instructorProfile = InstructorProfileModel.fromJson(data['profile'] as Map<String, dynamic>);
+      }
+      _setLoading(false);
+    } on ApiException catch (e) {
+      _setError(e.message);
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  // Delete Instructor Profile
+  Future<void> deleteInstructorProfile() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _apiClient.delete(ApiEndpoints.instructorProfile);
+      _instructorProfile = null;
+      _setLoading(false);
+    } on ApiException catch (e) {
+      _setError(e.message);
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  // Deactivate Account
+  Future<void> deactivateAccount() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _apiClient.patch(ApiEndpoints.deactivateAccount);
+      _user = null;
+      _studentProfile = null;
+      _instructorProfile = null;
+      _setLoading(false);
+    } on ApiException catch (e) {
+      _setError(e.message);
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
   void _setLoading(bool val) {
     _isLoading = val;
     notifyListeners();

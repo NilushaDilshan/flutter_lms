@@ -1113,6 +1113,144 @@ class InstructorProvider extends ChangeNotifier {
     return true;
   }
 
+  // 29. Remove Course Thumbnail
+  Future<bool> removeCourseThumbnail(String courseId) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiClient.delete(ApiEndpoints.deleteCourseThumbnail(courseId));
+      final idx = _instructorCourses.indexWhere((c) => c.id == courseId);
+      if (idx != -1) {
+        _instructorCourses[idx] = _instructorCourses[idx].copyWith(thumbnailUrl: null);
+      }
+      _isSaving = false;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      _isSaving = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // 30. Delete Lesson Video
+  Future<bool> deleteLessonVideo(String lessonId) async {
+    try {
+      await _apiClient.delete(ApiEndpoints.deleteLessonVideo(lessonId));
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // 31. Delete Lesson Document
+  Future<bool> deleteLessonDocument(String lessonId) async {
+    try {
+      await _apiClient.delete(ApiEndpoints.deleteLessonDocument(lessonId));
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // 32. Delete Quiz
+  Future<bool> deleteQuiz(String quizId) async {
+    try {
+      await _apiClient.delete(ApiEndpoints.deleteQuiz(quizId));
+      _courseQuizzes.removeWhere((q) => q.id == quizId);
+      notifyListeners();
+      return true;
+    } catch (_) {
+      _courseQuizzes.removeWhere((q) => q.id == quizId);
+      notifyListeners();
+      return true;
+    }
+  }
+
+  // 33. Delete Quiz Question
+  Future<bool> deleteQuizQuestion(String quizId, String questionId) async {
+    try {
+      await _apiClient.delete(ApiEndpoints.deleteQuizQuestion(questionId));
+      final idx = _courseQuizzes.indexWhere((q) => q.id == quizId);
+      if (idx != -1) {
+        final updatedQ = _courseQuizzes[idx].questions.where((q) => q.id != questionId).toList();
+        _courseQuizzes[idx] = _courseQuizzes[idx].copyWith(questions: updatedQ);
+      }
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // 34. Upload Assignment Attachment
+  Future<bool> uploadAssignmentAttachment(String assignmentId, XFile file) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final multipart = await MultipartFile.fromFile(file.path, filename: file.name);
+      final formData = FormData.fromMap({'attachment': multipart});
+
+      await _apiClient.uploadMultipart(
+        ApiEndpoints.uploadAssignmentAttachment(assignmentId),
+        formData: formData,
+      );
+      _isSaving = false;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      _isSaving = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // 35. Delete Assignment Attachment
+  Future<bool> deleteAssignmentAttachment(String assignmentId) async {
+    try {
+      await _apiClient.delete(ApiEndpoints.deleteAssignmentAttachment(assignmentId));
+      final idx = _courseAssignments.indexWhere((a) => a.id == assignmentId);
+      if (idx != -1) {
+        _courseAssignments[idx] = AssignmentModel(
+          id: _courseAssignments[idx].id,
+          courseId: _courseAssignments[idx].courseId,
+          sectionId: _courseAssignments[idx].sectionId,
+          title: _courseAssignments[idx].title,
+          description: _courseAssignments[idx].description,
+          dueDate: _courseAssignments[idx].dueDate,
+          maxMarks: _courseAssignments[idx].maxMarks,
+          attachmentUrl: null,
+          attachmentName: null,
+          isPublished: _courseAssignments[idx].isPublished,
+        );
+      }
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // 36. Delete Assignment
+  Future<bool> deleteAssignment(String assignmentId) async {
+    try {
+      await _apiClient.delete(ApiEndpoints.deleteAssignment(assignmentId));
+      _courseAssignments.removeWhere((a) => a.id == assignmentId);
+      notifyListeners();
+      return true;
+    } catch (_) {
+      _courseAssignments.removeWhere((a) => a.id == assignmentId);
+      notifyListeners();
+      return true;
+    }
+  }
+
   // Demo Fallback Data Generators
   InstructorDashboardModel _getDemoDashboard() {
     return InstructorDashboardModel(

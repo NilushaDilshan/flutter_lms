@@ -97,6 +97,28 @@ class ApiEndpoints {
   // Reviews
   static String courseReviews(String courseId) => '/api/v1/courses/$courseId/reviews';
   static String reviewById(String id) => '/api/v1/reviews/$id';
+  static String reviewVisibility(String id) => '/api/v1/reviews/$id/visibility';
+
+  // Enrollments & Progress Additions
+  static String cancelEnrollment(String enrollmentId) => '/api/v1/enrollments/$enrollmentId/cancel';
+  static String enrollmentById(String id) => '/api/v1/enrollments/$id';
+  static String enrollmentProgress(String id) => '/api/v1/enrollments/$id/progress';
+
+  // Submission Additions
+  static String replaceSubmissionFile(String submissionId) => '/api/v1/submissions/$submissionId/file';
+
+  // Deletion Endpoints for Media, Quizzes & Assignments
+  static String deleteCourseThumbnail(String id) => '/api/v1/courses/$id/thumbnail';
+  static String deleteLessonVideo(String id) => '/api/v1/lessons/$id/video';
+  static String deleteLessonDocument(String id) => '/api/v1/lessons/$id/document';
+  static String deleteAssignmentAttachment(String id) => '/api/v1/assignments/$id/attachment';
+  static String deleteAssignment(String id) => '/api/v1/assignments/$id';
+  static String deleteQuiz(String id) => '/api/v1/quizzes/$id';
+  static String deleteQuizQuestion(String id) => '/api/v1/quiz-questions/$id';
+  static String deleteReview(String id) => '/api/v1/reviews/$id';
+
+  // Dashboards
+  static const String studentDashboard = '/api/v1/dashboard/student';
 
   // Notifications
   static const String myNotifications = '/api/v1/notifications/me';

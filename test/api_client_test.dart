@@ -27,6 +27,18 @@ void main() {
       expect(ApiEndpoints.registerInstructor, '/api/v1/auth/register/instructor');
       expect(ApiEndpoints.publishedCourses, '/api/v1/courses');
       expect(ApiEndpoints.categories, '/api/v1/categories');
+      expect(ApiEndpoints.studentDashboard, '/api/v1/dashboard/student');
+      expect(ApiEndpoints.instructorDashboard, '/api/v1/dashboard/instructor');
+      expect(ApiEndpoints.adminDashboard, '/api/v1/dashboard/admin');
+      expect(ApiEndpoints.cancelEnrollment('e-1'), '/api/v1/enrollments/e-1/cancel');
+      expect(ApiEndpoints.replaceSubmissionFile('s-1'), '/api/v1/submissions/s-1/file');
+      expect(ApiEndpoints.deleteCourseThumbnail('c-1'), '/api/v1/courses/c-1/thumbnail');
+      expect(ApiEndpoints.deleteLessonVideo('l-1'), '/api/v1/lessons/l-1/video');
+      expect(ApiEndpoints.deleteLessonDocument('l-1'), '/api/v1/lessons/l-1/document');
+      expect(ApiEndpoints.deleteAssignmentAttachment('a-1'), '/api/v1/assignments/a-1/attachment');
+      expect(ApiEndpoints.deleteAssignment('a-1'), '/api/v1/assignments/a-1');
+      expect(ApiEndpoints.deleteQuiz('q-1'), '/api/v1/quizzes/q-1');
+      expect(ApiEndpoints.deleteReview('r-1'), '/api/v1/reviews/r-1');
     });
 
     test('ApiException correctly handles connection timeout', () {

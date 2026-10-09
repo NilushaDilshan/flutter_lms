@@ -239,6 +239,47 @@ class AssignmentProvider extends ChangeNotifier {
     return true;
   }
 
+  // Replace submission file (resubmission)
+  Future<bool> replaceSubmissionFile(
+    String submissionId,
+    String filePath, {
+    String? fileName,
+  }) async {
+    _isSubmitting = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final multipart = await MultipartFile.fromFile(
+        filePath,
+        filename: fileName ?? filePath.split('/').last,
+      );
+      final formData = FormData.fromMap({'file': multipart});
+
+      final response = await _apiClient.uploadMultipart(
+        ApiEndpoints.replaceSubmissionFile(submissionId),
+        formData: formData,
+      );
+
+      final data = response.data['data'];
+      if (data != null && data['submission'] != null) {
+        _mySubmission = AssignmentSubmissionModel.fromJson(data['submission'] as Map<String, dynamic>);
+        _submissionsByAssignmentId[_mySubmission!.assignmentId] = _mySubmission!;
+      }
+      _isSubmitting = false;
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+    } catch (_) {
+      _errorMessage = 'Failed to replace submission file';
+    }
+
+    _isSubmitting = false;
+    notifyListeners();
+    return false;
+  }
+
   List<AssignmentModel> _getAllDemoAssignments() {
     return [
       ..._getDemoAssignments('6a5c39ae384147c91b73906a'),

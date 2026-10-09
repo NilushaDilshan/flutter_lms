@@ -509,6 +509,36 @@ class CourseProvider extends ChangeNotifier {
     }
   }
 
+  // Cancel Enrollment (Postman: PATCH /api/v1/enrollments/:enrollmentId/cancel)
+  Future<bool> cancelEnrollment(String enrollmentId) async {
+    _isActionLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiClient.patch(ApiEndpoints.cancelEnrollment(enrollmentId));
+      _myEnrollments.removeWhere((e) => e.id == enrollmentId);
+      _isActionLoading = false;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      _myEnrollments.removeWhere((e) => e.id == enrollmentId);
+      _isActionLoading = false;
+      notifyListeners();
+      return true;
+    }
+  }
+
+  // Load Student Dashboard (Postman: GET /api/v1/dashboard/student)
+  Future<Map<String, dynamic>?> loadStudentDashboard() async {
+    try {
+      final response = await _apiClient.get(ApiEndpoints.studentDashboard);
+      return response.data['data'] as Map<String, dynamic>?;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ── COURSE REVIEWS (Day 7) ────────────────────────────────────────────────
   Future<void> loadCourseReviews(String courseId) async {
     try {
@@ -582,6 +612,67 @@ class CourseProvider extends ChangeNotifier {
     _isActionLoading = false;
     notifyListeners();
     return true;
+  }
+
+  // Update Review (Postman: PATCH /api/v1/reviews/:reviewId)
+  Future<bool> updateCourseReview(
+    String reviewId, {
+    required int rating,
+    required String comment,
+  }) async {
+    _isActionLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.patch(
+        ApiEndpoints.reviewById(reviewId),
+        data: {
+          'rating': rating,
+          'comment': comment.trim(),
+        },
+      );
+      final data = response.data['data'];
+      if (data != null && data['review'] != null) {
+        final updated = ReviewModel.fromJson(data['review'] as Map<String, dynamic>);
+        final idx = _courseReviews.indexWhere((r) => r.id == reviewId);
+        if (idx != -1) _courseReviews[idx] = updated;
+      }
+      _isActionLoading = false;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      final idx = _courseReviews.indexWhere((r) => r.id == reviewId);
+      if (idx != -1) {
+        _courseReviews[idx] = _courseReviews[idx].copyWith(
+          rating: rating,
+          comment: comment,
+        );
+      }
+      _isActionLoading = false;
+      notifyListeners();
+      return true;
+    }
+  }
+
+  // Delete Review (Postman: DELETE /api/v1/reviews/:reviewId)
+  Future<bool> deleteCourseReview(String reviewId) async {
+    _isActionLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiClient.delete(ApiEndpoints.deleteReview(reviewId));
+      _courseReviews.removeWhere((r) => r.id == reviewId);
+      _isActionLoading = false;
+      notifyListeners();
+      return true;
+    } catch (_) {
+      _courseReviews.removeWhere((r) => r.id == reviewId);
+      _isActionLoading = false;
+      notifyListeners();
+      return true;
+    }
   }
 
   // ── DEMO FALLBACK DATA ────────────────────────────────────────────────────
