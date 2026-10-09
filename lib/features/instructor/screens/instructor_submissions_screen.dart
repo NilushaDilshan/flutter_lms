@@ -14,7 +14,7 @@ class InstructorSubmissionsScreen extends StatefulWidget {
 
   const InstructorSubmissionsScreen({
     super.key,
-    required this.assignmentId,
+    this.assignmentId = '',
     this.assignmentTitle,
     this.maxMarks = 100,
   });
@@ -28,7 +28,14 @@ class _InstructorSubmissionsScreenState extends State<InstructorSubmissionsScree
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<InstructorProvider>().loadAssignmentSubmissions(widget.assignmentId);
+      final p = context.read<InstructorProvider>();
+      if (widget.assignmentId.isNotEmpty) {
+        p.loadAssignmentSubmissions(widget.assignmentId);
+      } else if (p.courseAssignments.isNotEmpty) {
+        p.loadAssignmentSubmissions(p.courseAssignments.first.id);
+      } else {
+        p.loadAssignmentSubmissions('demo-assignment-1');
+      }
     });
   }
 

@@ -197,12 +197,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               color: Colors.white,
               padding: const EdgeInsets.all(16),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildMetaItem(Icons.star_rounded, Colors.amber, '${course.averageRating} (${course.reviewCount})', 'Rating'),
-                  _buildMetaItem(Icons.people_outline, AppColors.primary, '${course.totalEnrollments}', 'Students'),
-                  _buildMetaItem(Icons.language_outlined, AppColors.textSecondary, course.language, 'Language'),
-                  _buildMetaItem(Icons.layers_outlined, AppColors.secondary, '${provider.sections.length} Sec', 'Content'),
+                  Expanded(child: _buildMetaItem(Icons.star_rounded, Colors.amber, '${course.averageRating} (${course.reviewCount})', 'Rating')),
+                  Expanded(child: _buildMetaItem(Icons.people_outline, AppColors.primary, '${course.totalEnrollments}', 'Students')),
+                  Expanded(child: _buildMetaItem(Icons.language_outlined, AppColors.textSecondary, course.language, 'Language')),
+                  Expanded(child: _buildMetaItem(Icons.layers_outlined, AppColors.secondary, '${provider.sections.length} Sec', 'Content')),
                 ],
               ),
             ),
@@ -620,9 +619,21 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     );
   }
 
-  Widget _buildBottomBar(CourseModel course, bool isEnrolled, dynamic progress, bool isActionLoading) {
+  Widget _buildBottomBar(
+    CourseModel course,
+    bool isEnrolled,
+    dynamic progress,
+    bool isActionLoading,
+  ) {
+    // Keep the sticky action area vertically stacked.  A horizontal Row with
+    // a Spacer + button can become too tight on small Android screens and
+    // causes cascading "RenderBox was not laid out" errors.
+    final progressValue = ((progress?.progressPercentage ?? 0) as num)
+        .clamp(0, 100)
+        .toDouble();
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -634,103 +645,141 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         ],
       ),
       child: SafeArea(
+        top: false,
         child: isEnrolled
-            ? Row(
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.green.shade300),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.green.shade300),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.check_circle, color: AppColors.success, size: 12),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'ENROLLED',
-                                    style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
+                            Icon(Icons.check_circle, color: AppColors.success, size: 12),
+                            SizedBox(width: 4),
                             Text(
-                              '${progress?.progressPercentage ?? 0}% Complete',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              'ENROLLED',
+                              style: TextStyle(
+                                color: AppColors.success,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: ((progress?.progressPercentage ?? 0) as int) / 100.0,
-                            minHeight: 6,
-                            backgroundColor: Colors.grey.shade200,
-                            valueColor: const AlwaysStoppedAnimation(AppColors.primary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.play_circle_fill, size: 18),
-                    onPressed: () {
-                      final sections = context.read<CourseProvider>().sections;
-                      if (sections.isNotEmpty && sections.first.lessons.isNotEmpty) {
-                        _openLesson(sections.first.lessons.first, true);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                    label: const Text('Start / Resume'),
-                  ),
-                ],
-              )
-            : Row(
-                children: [
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Course Access', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                      ),
+                      const SizedBox(width: 8),
                       Text(
-                        course.isFree ? 'FREE' : '\$${course.price}',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                        '${progressValue.toInt()}% Complete',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ],
                   ),
-                  const Spacer(),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.how_to_reg, size: 18),
-                    label: isActionLoading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Enroll Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.studentRole,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progressValue / 100.0,
+                      minHeight: 6,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: const AlwaysStoppedAnimation(AppColors.primary),
                     ),
-                    onPressed: isActionLoading ? null : _handleEnroll,
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.play_circle_fill, size: 18),
+                      onPressed: () {
+                        final sections = context.read<CourseProvider>().sections;
+                        if (sections.isNotEmpty && sections.first.lessons.isNotEmpty) {
+                          _openLesson(sections.first.lessons.first, true);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      label: const Text('Start / Resume'),
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Course Access',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            Text(
+                              course.isFree ? 'FREE' : '\$${course.price}',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.how_to_reg, size: 18),
+                      label: isActionLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Enroll Now',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.studentRole,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: isActionLoading ? null : _handleEnroll,
+                    ),
                   ),
                 ],
               ),

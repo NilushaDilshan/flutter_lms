@@ -25,6 +25,14 @@ import '../../features/instructor/screens/course_create_edit_screen.dart';
 import '../../features/instructor/screens/course_studio_screen.dart';
 import '../../features/instructor/screens/instructor_quiz_attempts_screen.dart';
 import '../../features/instructor/screens/instructor_submissions_screen.dart';
+import '../../features/admin/screens/admin_category_management_screen.dart';
+import '../../features/admin/screens/admin_course_moderation_screen.dart';
+import '../../features/admin/screens/admin_enrollment_management_screen.dart';
+import '../../features/admin/screens/admin_main_screen.dart';
+import '../../features/admin/screens/admin_review_moderation_screen.dart';
+import '../../features/admin/screens/admin_user_management_screen.dart';
+import '../../features/dashboard/screens/instructor_main_screen.dart';
+import '../../features/dashboard/screens/student_main_screen.dart';
 import '../../features/splash/screens/splash_screen.dart';
 import 'app_routes.dart';
 
@@ -226,6 +234,64 @@ class RouteGenerator {
             quizId: quizId,
             quizTitle: title,
           ),
+          settings: settings,
+        );
+
+      // Day 9: Navigation Shells & Admin Management
+      case AppRoutes.studentMain:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final name = args?['name'] as String? ?? 'Kamal Perera';
+        final tab = (args?['tab'] as num?)?.toInt() ?? 0;
+        return MaterialPageRoute(
+          builder: (_) => StudentMainScreen(studentName: name, initialTab: tab),
+          settings: settings,
+        );
+
+      case AppRoutes.instructorMain:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final name = args?['name'] as String? ?? 'Nimal Fernando';
+        final tab = (args?['tab'] as num?)?.toInt() ?? 0;
+        return MaterialPageRoute(
+          builder: (_) => InstructorMainScreen(instructorName: name, initialTab: tab),
+          settings: settings,
+        );
+
+      case AppRoutes.adminMain:
+        final args = settings.arguments as Map<String, dynamic>?;
+        final email = args?['email'] as String? ?? 'admin@lms.com';
+        final tab = (args?['tab'] as num?)?.toInt() ?? 0;
+        return MaterialPageRoute(
+          builder: (_) => AdminMainScreen(adminEmail: email, initialTab: tab),
+          settings: settings,
+        );
+
+      case AppRoutes.adminUsers:
+        return MaterialPageRoute(
+          builder: (_) => const AdminUserManagementScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.adminCategories:
+        return MaterialPageRoute(
+          builder: (_) => const AdminCategoryManagementScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.adminCourses:
+        return MaterialPageRoute(
+          builder: (_) => const AdminCourseModerationScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.adminEnrollments:
+        return MaterialPageRoute(
+          builder: (_) => const AdminEnrollmentManagementScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.adminReviews:
+        return MaterialPageRoute(
+          builder: (_) => const AdminReviewModerationScreen(),
           settings: settings,
         );
 

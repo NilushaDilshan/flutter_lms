@@ -105,7 +105,12 @@ class ApiEndpoints {
   static String markNotificationRead(String id) => '/api/v1/notifications/$id/read';
   static String deleteNotification(String id) => '/api/v1/notifications/$id';
 
-  // Admin User Management
+  // Admin LMS Management
+  static const String adminDashboard = '/api/v1/dashboard/admin';
   static const String adminUsers = '/api/v1/users';
+  static String adminUserById(String id) => '/api/v1/users/$id';
   static String adminUserStatus(String id) => '/api/v1/users/$id/status';
+  static const String adminEnrollments = '/api/v1/enrollments/admin/all';
+  static String adminArchiveCourse(String id) => '/api/v1/courses/$id/admin/archive';
+  static String adminReviewVisibility(String id) => '/api/v1/reviews/$id/visibility';
 }

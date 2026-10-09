@@ -108,16 +108,6 @@ class _LoginScreenState extends State<LoginScreen> {
             role: inferredRole,
           );
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: Colors.orange.shade800,
-              behavior: SnackBarBehavior.floating,
-              content: Text(
-                'Offline Demo: Logged in as $inferredRole ($email)',
-              ),
-            ),
-          );
-
           Navigator.of(context).pushReplacementNamed(
             targetRoute,
             arguments: arguments,

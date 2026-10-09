@@ -4,6 +4,7 @@ import 'core/constants/app_strings.dart';
 import 'core/routes/app_routes.dart';
 import 'core/routes/route_generator.dart';
 import 'core/theme/app_theme.dart';
+import 'features/admin/providers/admin_provider.dart';
 import 'features/assignments/providers/assignment_provider.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/courses/providers/course_provider.dart';
@@ -24,6 +25,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => AssignmentProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => InstructorProvider()),
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
       ],
       child: const FlutterLmsApp(),
     ),

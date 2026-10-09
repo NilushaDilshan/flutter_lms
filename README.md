@@ -134,9 +134,31 @@ docker restart flutter-lms-backend
   - Created `MyCoursesScreen` displaying enrolled courses with completion percentages and direct resume actions.
   - Registered `CourseProvider` in `MultiProvider` and mapped all routes (`/courses`, `/course-detail`, `/lesson-player`, `/my-courses`) in `RouteGenerator`.
   - Expanded unit and widget test suite to 28 passing tests in total (`courses_test.dart`, `widget_test.dart`, and `api_client_test.dart`).
-- [ ] **Day 7: Quizzes, Assignments, Reviews, Notifications and Student Profile UX**
-- [ ] **Day 8: Instructor Course Building and Learner Management**
-- [ ] **Day 9: Admin Management, State Management, Bottom Navigation and Animations**
+- [x] **Day 7: Quizzes, Assignments, Reviews, Notifications and Student Profile UX**
+  - Implemented `QuizModel`, `QuizAttemptModel`, `AssignmentModel`, `AssignmentSubmissionModel`, and `NotificationModel`.
+  - Built `QuizProvider`, `AssignmentProvider`, and `NotificationProvider` with real backend calls and demo fallbacks.
+  - Created `QuizListScreen` and interactive `QuizAttemptScreen` with timer countdown, single/multi-choice questions, and score summary dialogs.
+  - Created `AssignmentListScreen` and `AssignmentDetailScreen` with written answer submission, simulated file attachment, and graded status views.
+  - Created `NotificationScreen` with mark-as-read and dismissible actions.
+  - Added Day 7 test suite in `test/day7_assessment_test.dart`.
+- [x] **Day 8: Instructor Course Building and Learner Management**
+  - Implemented `InstructorDashboardModel` and comprehensive `InstructorProvider` covering course CRUD, section authoring, lesson uploads, quizzes, assignments, and learner grading.
+  - Created `InstructorDashboardScreen` with live metrics, course status filters, and studio navigation.
+  - Created `CourseCreateEditScreen` for course authoring with category selection and pricing settings.
+  - Created `CourseStudioScreen` with a 3-tab experience (Curriculum sections/lessons, Assessments authoring, and Learners progress).
+  - Created `InstructorSubmissionsScreen` for grading assignments with marks and instructor feedback.
+  - Created `InstructorQuizAttemptsScreen` for inspecting student quiz scores.
+  - Added Day 8 test suite in `test/day8_instructor_test.dart` (all passing).
+- [x] **Day 9: Admin Management, State Management, Bottom Navigation and Animations**
+  - Implemented `AdminDashboardModel` and `AdminProvider` with full state management for Users, Categories, Courses, Enrollments, and Reviews.
+  - Created `AdminUserManagementScreen` with real-time search, role/status filter chips, and `AnimatedContainer` status badges.
+  - Created `AdminCategoryManagementScreen` with category authoring, slug generation, editing, and active status toggle switches.
+  - Created `AdminCourseModerationScreen` supporting inspection across DRAFT, PUBLISHED, ARCHIVED statuses and administrative archiving.
+  - Created `AdminEnrollmentManagementScreen` for system-wide enrollment monitoring with course filters and completion progress.
+  - Created `AdminReviewModerationScreen` featuring `AnimatedOpacity` for smooth public visibility moderation.
+  - Built role-appropriate `BottomNavigationBar` navigation shells: `AdminMainScreen`, `StudentMainScreen`, and `InstructorMainScreen`.
+  - Upgraded `AdminDashboardScreen` with live platform metrics and quick administrative action cards.
+  - Added Day 9 test suite in `test/day9_admin_test.dart` (16/16 passing) bringing the project total to 63 passing tests.
 - [ ] **Day 10: Responsive Design, Full Testing, UI/UX Polish and Final Submission**
 
 ---

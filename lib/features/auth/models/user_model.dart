@@ -7,6 +7,7 @@ class UserModel {
   final bool isEmailVerified;
   final String? profileImage;
   final String? bio;
+  final String status; // 'ACTIVE', 'SUSPENDED'
 
   UserModel({
     required this.id,
@@ -17,12 +18,15 @@ class UserModel {
     this.isEmailVerified = false,
     this.profileImage,
     this.bio,
+    this.status = 'ACTIVE',
   });
 
   String get fullName => '$firstName $lastName'.trim();
   bool get isStudent => role.toUpperCase() == 'STUDENT';
   bool get isInstructor => role.toUpperCase() == 'INSTRUCTOR';
   bool get isAdmin => role.toUpperCase() == 'ADMIN';
+  bool get isActive => status.toUpperCase() == 'ACTIVE';
+  bool get isSuspended => status.toUpperCase() == 'SUSPENDED';
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -34,6 +38,7 @@ class UserModel {
       isEmailVerified: (json['isEmailVerified'] ?? json['emailVerified']) as bool? ?? false,
       profileImage: (json['profileImage'] ?? json['profileImageUrl']) as String?,
       bio: json['bio'] as String?,
+      status: (json['status'] as String? ?? 'ACTIVE').toUpperCase(),
     );
   }
 
@@ -47,6 +52,7 @@ class UserModel {
       'isEmailVerified': isEmailVerified,
       'profileImage': profileImage,
       'bio': bio,
+      'status': status,
     };
   }
 
@@ -58,6 +64,7 @@ class UserModel {
     bool? isEmailVerified,
     String? profileImage,
     String? bio,
+    String? status,
   }) {
     return UserModel(
       id: id,
@@ -68,6 +75,7 @@ class UserModel {
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       profileImage: profileImage ?? this.profileImage,
       bio: bio ?? this.bio,
+      status: status ?? this.status,
     );
   }
 }

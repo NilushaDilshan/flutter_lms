@@ -34,4 +34,14 @@ class AppRoutes {
   static const String instructorCourseStudio = '/instructor/courses/studio';
   static const String instructorSubmissions = '/instructor/submissions';
   static const String instructorQuizAttempts = '/instructor/quiz-attempts';
+
+  // Day 9: Admin Management & Navigation Shells
+  static const String studentMain = '/student/main';
+  static const String instructorMain = '/instructor/main';
+  static const String adminMain = '/admin/main';
+  static const String adminUsers = '/admin/users';
+  static const String adminCategories = '/admin/categories';
+  static const String adminCourses = '/admin/courses';
+  static const String adminEnrollments = '/admin/enrollments';
+  static const String adminReviews = '/admin/reviews';
 }

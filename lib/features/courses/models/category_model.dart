@@ -32,4 +32,20 @@ class CategoryModel {
       'isActive': isActive,
     };
   }
+
+  CategoryModel copyWith({
+    String? id,
+    String? name,
+    String? slug,
+    String? description,
+    bool? isActive,
+  }) {
+    return CategoryModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      slug: slug ?? this.slug,
+      description: description ?? this.description,
+      isActive: isActive ?? this.isActive,
+    );
+  }
 }

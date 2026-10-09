@@ -6,6 +6,7 @@ class ReviewModel {
   final int rating;
   final String comment;
   final DateTime createdAt;
+  final bool isVisible;
 
   ReviewModel({
     required this.id,
@@ -15,6 +16,7 @@ class ReviewModel {
     required this.rating,
     required this.comment,
     required this.createdAt,
+    this.isVisible = true,
   });
 
   factory ReviewModel.fromJson(Map<String, dynamic> json) {
@@ -41,6 +43,29 @@ class ReviewModel {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
+      isVisible: json['isVisible'] as bool? ?? true,
+    );
+  }
+
+  ReviewModel copyWith({
+    String? id,
+    String? courseId,
+    String? studentId,
+    String? studentName,
+    int? rating,
+    String? comment,
+    DateTime? createdAt,
+    bool? isVisible,
+  }) {
+    return ReviewModel(
+      id: id ?? this.id,
+      courseId: courseId ?? this.courseId,
+      studentId: studentId ?? this.studentId,
+      studentName: studentName ?? this.studentName,
+      rating: rating ?? this.rating,
+      comment: comment ?? this.comment,
+      createdAt: createdAt ?? this.createdAt,
+      isVisible: isVisible ?? this.isVisible,
     );
   }
 }
