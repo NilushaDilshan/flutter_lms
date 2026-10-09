@@ -1,66 +1,43 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_lms/core/api/api_client.dart';
-import 'package:flutter_lms/core/storage/token_storage.dart';
 import 'package:flutter_lms/features/assignments/providers/assignment_provider.dart';
 import 'package:flutter_lms/features/assignments/screens/assignment_list_screen.dart';
 import 'package:flutter_lms/features/courses/providers/course_provider.dart';
 import 'package:flutter_lms/features/quizzes/providers/quiz_provider.dart';
 import 'package:flutter_lms/features/quizzes/screens/quiz_list_screen.dart';
 
-/// Creates a [Dio] instance that immediately throws a connection error for every
-/// request, so providers fall through to their offline/demo data without waiting
-/// for real network timeouts.
-Dio _offlineDio() {
-  final dio = Dio(
-    BaseOptions(
-      baseUrl: 'http://localhost:3000/api',
-      connectTimeout: const Duration(milliseconds: 50),
-      receiveTimeout: const Duration(milliseconds: 50),
-    ),
-  );
-  return dio;
-}
-
-/// Creates an [ApiClient] backed by the offline-immediate Dio.
-ApiClient _offlineClient() => ApiClient(
-      tokenStorage: TokenStorage(),
-      customDio: _offlineDio(),
-    );
-
 void main() {
   // ---------------------------------------------------------------------------
-  // Day 10: Course Enrollment & Continue Learning Flow (unit tests — fast)
+  // Day 10: Course Enrollment & Continue Learning Flow (Unit Tests)
   // ---------------------------------------------------------------------------
   group('Day 10: Course Enrollment & Continue Learning Flow', () {
-    test('isEnrolled returns true for demo-enrolled courseId', () async {
-      final provider = CourseProvider(apiClient: _offlineClient());
-      await provider.loadMyEnrollments();
+    test('isEnrolled returns true for demo-enrolled courseId', () {
+      final provider = CourseProvider();
+      provider.seedDemoEnrollments();
 
       // Demo seed contains '6a5c39ae384147c91b73906a' as an ACTIVE enrollment
       expect(provider.isEnrolled('6a5c39ae384147c91b73906a'), isTrue);
     });
 
-    test('isEnrolled returns true for second demo-enrolled courseId (course-2)', () async {
-      final provider = CourseProvider(apiClient: _offlineClient());
-      await provider.loadMyEnrollments();
+    test('isEnrolled returns true for second demo-enrolled courseId (course-2)', () {
+      final provider = CourseProvider();
+      provider.seedDemoEnrollments();
 
       expect(provider.isEnrolled('course-2'), isTrue);
     });
 
-    test('isEnrolled returns false for a non-enrolled courseId', () async {
-      final provider = CourseProvider(apiClient: _offlineClient());
-      await provider.loadMyEnrollments();
+    test('isEnrolled returns false for a non-enrolled courseId', () {
+      final provider = CourseProvider();
+      provider.seedDemoEnrollments();
 
       // course-3 is NOT in demo enrollments
       expect(provider.isEnrolled('course-3'), isFalse);
     });
 
-    test('getEnrollment returns non-null with 45% progress for enrolled courseId', () async {
-      final provider = CourseProvider(apiClient: _offlineClient());
-      await provider.loadMyEnrollments();
+    test('getEnrollment returns non-null with 45% progress for enrolled courseId', () {
+      final provider = CourseProvider();
+      provider.seedDemoEnrollments();
 
       final enrollment = provider.getEnrollment('6a5c39ae384147c91b73906a');
       expect(enrollment, isNotNull);
@@ -68,28 +45,27 @@ void main() {
     });
 
     test('isQuizCompleted returns true for seeded quiz (quiz-state-mgmt)', () {
-      final provider = QuizProvider(apiClient: _offlineClient());
-      // Seeded in constructor — no async needed
+      final provider = QuizProvider();
+      // Seeded in constructor
       expect(provider.isQuizCompleted('quiz-state-mgmt'), isTrue);
     });
 
     test('isAssignmentSubmitted returns true for seeded assignment (assign-flutter-ui)', () {
-      final provider = AssignmentProvider(apiClient: _offlineClient());
-      // Seeded in constructor — no async needed
+      final provider = AssignmentProvider();
+      // Seeded in constructor
       expect(provider.isAssignmentSubmitted('assign-flutter-ui'), isTrue);
     });
   });
 
   // ---------------------------------------------------------------------------
-  // Day 10: Assessments Filtering & Completion Status Badges (widget tests)
+  // Day 10: Assessments Filtering & Completion Status Badges (Widget Tests)
   // ---------------------------------------------------------------------------
   group('Day 10: Assessments Filtering & Completion Status Badges', () {
     testWidgets(
         'QuizListScreen renders quizzes and displays COMPLETED badge for completed quiz',
         (tester) async {
-      final quizProvider = QuizProvider(apiClient: _offlineClient());
-      // Pre-populate with demo data using the offline client (instant fallback)
-      await quizProvider.loadCourseQuizzes('');
+      final quizProvider = QuizProvider();
+      quizProvider.seedDemoQuizzes();
 
       await tester.pumpWidget(
         MultiProvider(
@@ -102,8 +78,8 @@ void main() {
         ),
       );
 
-      // pumpAndSettle waits for all animations and async callbacks to finish
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Quizzes should be loaded
       expect(find.byType(ListView), findsOneWidget);
@@ -119,8 +95,8 @@ void main() {
     testWidgets(
         'AssignmentListScreen renders assignments and displays COMPLETED badge for submitted assignment',
         (tester) async {
-      final assignmentProvider = AssignmentProvider(apiClient: _offlineClient());
-      await assignmentProvider.loadCourseAssignments('');
+      final assignmentProvider = AssignmentProvider();
+      assignmentProvider.seedDemoAssignments();
 
       await tester.pumpWidget(
         MultiProvider(
@@ -133,7 +109,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assignments list should render
       expect(find.byType(ListView), findsOneWidget);
@@ -150,7 +127,7 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // Day 10: Responsive Layout Verification
+  // Day 10: Responsive Layout Verification (Widget Tests)
   // ---------------------------------------------------------------------------
   group('Day 10: Responsive Layout Verification', () {
     testWidgets(
@@ -160,8 +137,8 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
-      final quizProvider = QuizProvider(apiClient: _offlineClient());
-      await quizProvider.loadCourseQuizzes('');
+      final quizProvider = QuizProvider();
+      quizProvider.seedDemoQuizzes();
 
       await tester.pumpWidget(
         MultiProvider(
@@ -174,7 +151,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(QuizListScreen), findsOneWidget);
     });
 
@@ -185,8 +163,8 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
-      final assignmentProvider = AssignmentProvider(apiClient: _offlineClient());
-      await assignmentProvider.loadCourseAssignments('');
+      final assignmentProvider = AssignmentProvider();
+      assignmentProvider.seedDemoAssignments();
 
       await tester.pumpWidget(
         MultiProvider(
@@ -199,7 +177,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(AssignmentListScreen), findsOneWidget);
     });
   });

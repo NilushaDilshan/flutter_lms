@@ -132,7 +132,10 @@ class _QuizListScreenState extends State<QuizListScreen> {
                 ),
               ),
             ],
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -152,7 +155,6 @@ class _QuizListScreenState extends State<QuizListScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -164,7 +166,6 @@ class _QuizListScreenState extends State<QuizListScreen> {
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green.shade800),
                   ),
                 ),
-                const Spacer(),
                 if (isCompleted)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

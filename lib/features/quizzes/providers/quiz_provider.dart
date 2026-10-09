@@ -58,6 +58,11 @@ class QuizProvider extends ChangeNotifier {
     return _attemptsByQuizId[quizId];
   }
 
+  void seedDemoQuizzes() {
+    _quizzes = _getAllDemoQuizzes();
+    notifyListeners();
+  }
+
   // Load quizzes available for all enrolled courses
   Future<void> loadQuizzesForCourses(List<String> courseIds) async {
     _isLoading = true;

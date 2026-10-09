@@ -50,6 +50,11 @@ class AssignmentProvider extends ChangeNotifier {
     return _submissionsByAssignmentId[assignmentId];
   }
 
+  void seedDemoAssignments() {
+    _assignments = _getAllDemoAssignments();
+    notifyListeners();
+  }
+
   // Load assignments for all enrolled courses
   Future<void> loadAssignmentsForCourses(List<String> courseIds) async {
     _isLoading = true;

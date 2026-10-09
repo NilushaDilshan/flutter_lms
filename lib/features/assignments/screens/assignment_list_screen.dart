@@ -143,7 +143,10 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
                   ),
                 ),
               ],
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -152,6 +155,7 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.assignment_outlined, size: 14, color: Colors.purple.shade700),
                         const SizedBox(width: 4),
@@ -162,7 +166,6 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
                       ],
                     ),
                   ),
-                  const Spacer(),
                   if (isCompleted)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

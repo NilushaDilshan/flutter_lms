@@ -743,6 +743,11 @@ In Flutter, almost everything is a widget. Structural elements (like buttons or 
     ];
   }
 
+  void seedDemoEnrollments() {
+    _myEnrollments = _getDemoStudentEnrollments();
+    notifyListeners();
+  }
+
   List<EnrollmentModel> _getDemoStudentEnrollments() {
     final demoCourses = _getDemoCourses();
     return [
