@@ -188,6 +188,10 @@ class CourseProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    if (_myEnrollments.isEmpty) {
+      await loadMyEnrollments();
+    }
+
     try {
       // 1. Fetch Course Detail
       final courseResponse = await _apiClient.get(ApiEndpoints.courseById(courseId));
@@ -230,19 +234,21 @@ class CourseProvider extends ChangeNotifier {
       } catch (_) {
         _sections = _getDemoSections(courseId);
       }
-
-      // 3. Load Progress if enrolled
-      if (isEnrolled(courseId)) {
-        await loadCourseProgress(courseId);
-      }
     } catch (e) {
-      // Offline fallback
-      _selectedCourse ??= _courses.firstWhere(
+      // Offline fallback: find by courseId in loaded courses or fallback demo courses
+      _selectedCourse = _courses.firstWhere(
         (c) => c.id == courseId,
-        orElse: () => _getDemoCourses().first,
+        orElse: () => _getDemoCourses().firstWhere(
+          (c) => c.id == courseId,
+          orElse: () => _getDemoCourses().first,
+        ),
       );
       _sections = _getDemoSections(courseId);
     } finally {
+      final targetCourseId = _selectedCourse?.id ?? courseId;
+      if (isEnrolled(courseId) || isEnrolled(targetCourseId)) {
+        await loadCourseProgress(targetCourseId);
+      }
       _isLoadingDetails = false;
       notifyListeners();
     }
@@ -332,9 +338,15 @@ class CourseProvider extends ChangeNotifier {
             .map((e) => EnrollmentModel.fromJson(e))
             .toList();
         notifyListeners();
+        return;
       }
     } catch (_) {
-      // Keep existing or demo
+      // Offline fallback
+    }
+
+    if (_myEnrollments.isEmpty) {
+      _myEnrollments = _getDemoStudentEnrollments();
+      notifyListeners();
     }
   }
 
@@ -348,9 +360,22 @@ class CourseProvider extends ChangeNotifier {
         // Update lesson completion status in sections
         _updateLessonCompletionStatuses();
         notifyListeners();
+        return;
       }
     } catch (_) {
-      // Keep existing progress
+      // Keep existing progress or demo fallback
+    }
+
+    if (isEnrolled(courseId)) {
+      final enr = getEnrollment(courseId);
+      final p = enr?.progressPercentage ?? 0;
+      _currentProgress = CourseProgressModel(
+        progressPercentage: p,
+        completedLessons: (p / 25).round().clamp(0, 4),
+        totalLessons: 4,
+      );
+      _updateLessonCompletionStatuses();
+      notifyListeners();
     }
   }
 
@@ -468,12 +493,17 @@ class CourseProvider extends ChangeNotifier {
   }
 
   bool isEnrolled(String courseId) {
-    return _myEnrollments.any((e) => e.courseId == courseId && e.isActive);
+    if (courseId.isEmpty) return false;
+    return _myEnrollments.any((e) =>
+        (e.courseId == courseId || e.course?.id == courseId) &&
+        e.status.toUpperCase() != 'CANCELLED');
   }
 
   EnrollmentModel? getEnrollment(String courseId) {
     try {
-      return _myEnrollments.firstWhere((e) => e.courseId == courseId);
+      return _myEnrollments.firstWhere(
+        (e) => (e.courseId == courseId || e.course?.id == courseId),
+      );
     } catch (_) {
       return null;
     }
@@ -709,6 +739,30 @@ In Flutter, almost everything is a widget. Structural elements (like buttons or 
             isPreview: false,
           ),
         ],
+      ),
+    ];
+  }
+
+  List<EnrollmentModel> _getDemoStudentEnrollments() {
+    final demoCourses = _getDemoCourses();
+    return [
+      EnrollmentModel(
+        id: 'demo-enr-1',
+        studentId: 'usr-student-1',
+        courseId: '6a5c39ae384147c91b73906a',
+        course: demoCourses.first,
+        status: 'ACTIVE',
+        progressPercentage: 45,
+        enrolledAt: DateTime.now().subtract(const Duration(days: 7)),
+      ),
+      EnrollmentModel(
+        id: 'demo-enr-2',
+        studentId: 'usr-student-1',
+        courseId: 'course-2',
+        course: demoCourses.length > 1 ? demoCourses[1] : null,
+        status: 'ACTIVE',
+        progressPercentage: 15,
+        enrolledAt: DateTime.now().subtract(const Duration(days: 3)),
       ),
     ];
   }

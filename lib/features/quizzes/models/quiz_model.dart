@@ -55,6 +55,7 @@ class QuizQuestionModel {
 class QuizModel {
   final String id;
   final String courseId;
+  final String? courseTitle;
   final String? sectionId;
   final String title;
   final String? description;
@@ -67,6 +68,7 @@ class QuizModel {
   QuizModel({
     required this.id,
     required this.courseId,
+    this.courseTitle,
     this.sectionId,
     required this.title,
     this.description,
@@ -82,6 +84,8 @@ class QuizModel {
     return QuizModel(
       id: json['id'] as String? ?? json['_id'] as String? ?? '',
       courseId: json['courseId'] as String? ?? '',
+      courseTitle: json['courseTitle']?.toString() ??
+          (json['course'] is Map ? json['course']['title']?.toString() : null),
       sectionId: json['sectionId'] as String?,
       title: json['title'] as String? ?? 'Untitled Quiz',
       description: json['description'] as String?,
@@ -95,10 +99,12 @@ class QuizModel {
 
   QuizModel copyWith({
     List<QuizQuestionModel>? questions,
+    String? courseTitle,
   }) {
     return QuizModel(
       id: id,
       courseId: courseId,
+      courseTitle: courseTitle ?? this.courseTitle,
       sectionId: sectionId,
       title: title,
       description: description,

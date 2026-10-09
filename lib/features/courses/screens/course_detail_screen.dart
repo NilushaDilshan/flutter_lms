@@ -31,6 +31,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<CourseProvider>();
+      provider.loadMyEnrollments();
       provider.loadCourseDetails(widget.courseId);
       provider.loadCourseReviews(widget.courseId);
     });
@@ -96,7 +97,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<CourseProvider>();
     final course = provider.selectedCourse;
-    final isEnrolled = provider.isEnrolled(widget.courseId);
+    final isEnrolled = provider.isEnrolled(widget.courseId) ||
+        (course != null && provider.isEnrolled(course.id));
     final progress = provider.currentProgress;
 
     if (provider.isLoadingDetails && course == null) {
@@ -627,8 +629,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   ) {
     // Keep the sticky action area vertically stacked.  A horizontal Row with
     // a Spacer + button can become too tight on small Android screens and
-    // causes cascading "RenderBox was not laid out" errors.
-    final progressValue = ((progress?.progressPercentage ?? 0) as num)
+    final provider = context.read<CourseProvider>();
+    final enrollment = provider.getEnrollment(course.id) ??
+        provider.getEnrollment(widget.courseId);
+    final progressValue = ((progress?.progressPercentage ?? enrollment?.progressPercentage ?? 0) as num)
         .clamp(0, 100)
         .toDouble();
 
@@ -678,7 +682,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${progressValue.toInt()}% Complete',
+                        progressValue > 0 ? '${progressValue.toInt()}% Complete' : 'Enrolled',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -704,8 +708,24 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       icon: const Icon(Icons.play_circle_fill, size: 18),
                       onPressed: () {
                         final sections = context.read<CourseProvider>().sections;
-                        if (sections.isNotEmpty && sections.first.lessons.isNotEmpty) {
-                          _openLesson(sections.first.lessons.first, true);
+                        if (sections.isNotEmpty) {
+                          LessonModel? nextLesson;
+                          for (final s in sections) {
+                            for (final l in s.lessons) {
+                              if (!l.isCompleted) {
+                                nextLesson = l;
+                                break;
+                              }
+                            }
+                            if (nextLesson != null) break;
+                          }
+                          if (nextLesson != null) {
+                            _openLesson(nextLesson, true);
+                            return;
+                          }
+                          if (sections.first.lessons.isNotEmpty) {
+                            _openLesson(sections.first.lessons.first, true);
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -713,7 +733,10 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      label: const Text('Start / Resume'),
+                      label: Text(
+                        progressValue > 0 ? 'Continue Now' : 'Start Learning',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
                     ),
                   ),
                 ],

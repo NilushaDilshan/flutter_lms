@@ -1,6 +1,7 @@
 class AssignmentModel {
   final String id;
   final String courseId;
+  final String? courseTitle;
   final String? sectionId;
   final String title;
   final String description;
@@ -13,6 +14,7 @@ class AssignmentModel {
   AssignmentModel({
     required this.id,
     required this.courseId,
+    this.courseTitle,
     this.sectionId,
     required this.title,
     required this.description,
@@ -27,6 +29,8 @@ class AssignmentModel {
     return AssignmentModel(
       id: json['id'] as String? ?? json['_id'] as String? ?? '',
       courseId: json['courseId'] as String? ?? '',
+      courseTitle: json['courseTitle']?.toString() ??
+          (json['course'] is Map ? json['course']['title']?.toString() : null),
       sectionId: json['sectionId'] as String?,
       title: json['title'] as String? ?? 'Untitled Assignment',
       description: json['description'] as String? ?? '',

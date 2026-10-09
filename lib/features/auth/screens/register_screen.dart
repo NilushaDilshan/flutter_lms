@@ -27,16 +27,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
 
   // Student-specific
-  final _dobController = TextEditingController(text: '2002-05-15');
+  final _dobController = TextEditingController();
   String _educationLevel = 'Undergraduate';
-  final _learningGoalsController = TextEditingController(text: 'Learn Flutter, Build Mobile Apps');
+  final _learningGoalsController = TextEditingController();
 
   // Instructor-specific
-  final _headlineController = TextEditingController(text: 'Senior Flutter Specialist');
-  final _qualificationController = TextEditingController(text: 'BSc in Software Engineering');
-  final _experienceYearsController = TextEditingController(text: '5');
-  final _expertiseController = TextEditingController(text: 'Flutter, Dart, Firebase');
-  final _bioController = TextEditingController(text: 'Experienced cross-platform mobile developer.');
+  final _headlineController = TextEditingController();
+  final _qualificationController = TextEditingController();
+  final _experienceYearsController = TextEditingController();
+  final _expertiseController = TextEditingController();
+  final _bioController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -44,7 +44,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    _fillDemoStudentData();
+    // Text fields start blank so new users can easily enter their own details
   }
 
   void _fillDemoStudentData() {

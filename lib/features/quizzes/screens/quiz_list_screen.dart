@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/empty_state_widget.dart';
 import '../../../core/widgets/loading_state_widget.dart';
+import '../../courses/providers/course_provider.dart';
 import '../models/quiz_model.dart';
 import '../providers/quiz_provider.dart';
 
@@ -25,9 +26,40 @@ class _QuizListScreenState extends State<QuizListScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<QuizProvider>().loadCourseQuizzes(widget.courseId ?? '');
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _loadQuizzes();
     });
+  }
+
+  bool _initialLoadDone = false;
+
+  Future<void> _loadQuizzes({bool forceRefresh = false}) async {
+    final quizProvider = context.read<QuizProvider>();
+
+    // Skip if quizzes already loaded on initial load (not a manual refresh)
+    if (!forceRefresh && _initialLoadDone) return;
+    _initialLoadDone = true;
+
+    if (widget.courseId != null && widget.courseId!.isNotEmpty) {
+      await quizProvider.loadCourseQuizzes(widget.courseId!);
+    } else {
+      // If quizzes are already populated, skip redundant network fetch
+      if (!forceRefresh && quizProvider.quizzes.isNotEmpty) return;
+
+      List<String> enrolledIds = [];
+      try {
+        final courseProvider = Provider.of<CourseProvider>(context, listen: false);
+        if (courseProvider.myEnrollments.isEmpty) {
+          await courseProvider.loadMyEnrollments();
+        }
+        enrolledIds = courseProvider.myEnrollments.map((e) => e.courseId).toList();
+      } catch (_) {
+        // Standalone test without CourseProvider
+      }
+      await quizProvider.loadQuizzesForCourses(
+        enrolledIds.isNotEmpty ? enrolledIds : ['6a5c39ae384147c91b73906a', 'course-2'],
+      );
+    }
   }
 
   @override
@@ -37,17 +69,17 @@ class _QuizListScreenState extends State<QuizListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(widget.courseTitle != null ? 'Quizzes: ${widget.courseTitle}' : 'Available Quizzes'),
+        title: Text(widget.courseTitle != null ? 'Quizzes: ${widget.courseTitle}' : 'My Course Quizzes'),
       ),
       body: RefreshIndicator(
-        onRefresh: () => quizProvider.loadCourseQuizzes(widget.courseId ?? ''),
+        onRefresh: () => _loadQuizzes(forceRefresh: true),
         child: quizProvider.isLoading
-            ? const LoadingStateWidget(message: 'Loading available quizzes...')
+            ? const LoadingStateWidget(message: 'Loading course quizzes...')
             : quizProvider.quizzes.isEmpty
                 ? EmptyStateWidget(
                     icon: Icons.quiz_outlined,
                     title: 'No Quizzes Available',
-                    message: 'There are no active quizzes published for this course yet.',
+                    message: 'There are no active quizzes published for your enrolled courses yet.',
                     actionText: 'Back to Courses',
                     onAction: () => Navigator.of(context).pop(),
                   )
@@ -57,14 +89,23 @@ class _QuizListScreenState extends State<QuizListScreen> {
                     separatorBuilder: (context, index) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final quiz = quizProvider.quizzes[index];
-                      return _buildQuizCard(quiz);
+                      return _buildQuizCard(quiz, quizProvider);
                     },
                   ),
       ),
     );
   }
 
-  Widget _buildQuizCard(QuizModel quiz) {
+  Widget _buildQuizCard(
+    QuizModel quiz,
+    QuizProvider quizProvider,
+  ) {
+    final isCompleted = quizProvider.isQuizCompleted(quiz.id);
+    final attempt = quizProvider.getQuizAttempt(quiz.id);
+
+    // Find course title if browsing across all enrolled courses
+    final courseName = widget.courseTitle == null ? quiz.courseTitle : null;
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       elevation: 2,
@@ -73,6 +114,24 @@ class _QuizListScreenState extends State<QuizListScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (courseName != null && courseName.isNotEmpty) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  courseName,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
             Row(
               children: [
                 Container(
@@ -106,10 +165,37 @@ class _QuizListScreenState extends State<QuizListScreen> {
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  'Max ${quiz.maxAttempts} attempts',
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                ),
+                if (isCompleted)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.success),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle, size: 13, color: AppColors.success),
+                        const SizedBox(width: 4),
+                        Text(
+                          attempt?.percentage != null
+                              ? 'COMPLETED (${attempt!.percentage!.toInt()}%)'
+                              : 'COMPLETED',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.success,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Text(
+                    'Max ${quiz.maxAttempts} attempts',
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -130,10 +216,20 @@ class _QuizListScreenState extends State<QuizListScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                label: const Text('Start Quiz Attempt', style: TextStyle(fontWeight: FontWeight.bold)),
+                icon: Icon(
+                  isCompleted ? Icons.restart_alt_rounded : Icons.play_arrow_rounded,
+                  size: 20,
+                ),
+                label: Text(
+                  isCompleted
+                      ? (attempt?.percentage != null
+                          ? 'Retake Quiz (Best: ${attempt!.percentage!.toInt()}%)'
+                          : 'Retake Quiz')
+                      : 'Start Quiz Attempt',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: isCompleted ? Colors.teal.shade700 : AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
