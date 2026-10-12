@@ -202,29 +202,16 @@ class InstructorProvider extends ChangeNotifier {
       }
     } on ApiException catch (e) {
       _errorMessage = e.message;
+      _isSaving = false;
+      notifyListeners();
+      return null;
     } catch (e) {
       _errorMessage = 'Failed to create course. Please try again.';
+      _isSaving = false;
+      notifyListeners();
+      return null;
     }
-
-    // Demo fallback for test / offline
-    final demoCourse = CourseModel(
-      id: 'demo-created-${DateTime.now().millisecondsSinceEpoch}',
-      title: title,
-      slug: title.toLowerCase().replaceAll(' ', '-'),
-      shortDescription: shortDescription,
-      description: description,
-      level: level,
-      language: language,
-      categoryId: categoryId,
-      status: 'DRAFT',
-      learningOutcomes: learningOutcomes,
-      requirements: requirements,
-    );
-    _instructorCourses.insert(0, demoCourse);
-    _selectedCourse = demoCourse;
-    _isSaving = false;
-    notifyListeners();
-    return demoCourse;
+    return null;
   }
 
   // 6. Update Course

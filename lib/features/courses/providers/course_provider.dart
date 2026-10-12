@@ -589,29 +589,19 @@ class CourseProvider extends ChangeNotifier {
         final newReview = ReviewModel.fromJson(data['review'] as Map<String, dynamic>);
         _courseReviews.insert(0, newReview);
       }
-      _isActionLoading = false;
-      notifyListeners();
+      // Refresh course reviews to sync with backend
+      await loadCourseReviews(courseId);
       return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;
-    } catch (_) {
-      _errorMessage = 'Failed to submit review';
+      return false;
+    } catch (e) {
+      _errorMessage = 'Failed to submit review: ${e.toString()}';
+      return false;
+    } finally {
+      _isActionLoading = false;
+      notifyListeners();
     }
-
-    // Offline simulation
-    final demoRev = ReviewModel(
-      id: 'rev-${DateTime.now().millisecondsSinceEpoch}',
-      courseId: courseId,
-      studentId: 'student-me',
-      studentName: 'Student User',
-      rating: rating,
-      comment: comment,
-      createdAt: DateTime.now(),
-    );
-    _courseReviews.insert(0, demoRev);
-    _isActionLoading = false;
-    notifyListeners();
-    return true;
   }
 
   // Update Review (Postman: PATCH /api/v1/reviews/:reviewId)
@@ -619,6 +609,7 @@ class CourseProvider extends ChangeNotifier {
     String reviewId, {
     required int rating,
     required String comment,
+    String? courseId,
   }) async {
     _isActionLoading = true;
     _errorMessage = null;
@@ -638,25 +629,24 @@ class CourseProvider extends ChangeNotifier {
         final idx = _courseReviews.indexWhere((r) => r.id == reviewId);
         if (idx != -1) _courseReviews[idx] = updated;
       }
-      _isActionLoading = false;
-      notifyListeners();
-      return true;
-    } catch (_) {
-      final idx = _courseReviews.indexWhere((r) => r.id == reviewId);
-      if (idx != -1) {
-        _courseReviews[idx] = _courseReviews[idx].copyWith(
-          rating: rating,
-          comment: comment,
-        );
+      if (courseId != null) {
+        await loadCourseReviews(courseId);
       }
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      return false;
+    } catch (_) {
+      _errorMessage = 'Failed to update review';
+      return false;
+    } finally {
       _isActionLoading = false;
       notifyListeners();
-      return true;
     }
   }
 
   // Delete Review (Postman: DELETE /api/v1/reviews/:reviewId)
-  Future<bool> deleteCourseReview(String reviewId) async {
+  Future<bool> deleteCourseReview(String reviewId, {String? courseId}) async {
     _isActionLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -664,14 +654,19 @@ class CourseProvider extends ChangeNotifier {
     try {
       await _apiClient.delete(ApiEndpoints.deleteReview(reviewId));
       _courseReviews.removeWhere((r) => r.id == reviewId);
-      _isActionLoading = false;
-      notifyListeners();
+      if (courseId != null) {
+        await loadCourseReviews(courseId);
+      }
       return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      return false;
     } catch (_) {
-      _courseReviews.removeWhere((r) => r.id == reviewId);
+      _errorMessage = 'Failed to delete review';
+      return false;
+    } finally {
       _isActionLoading = false;
       notifyListeners();
-      return true;
     }
   }
 

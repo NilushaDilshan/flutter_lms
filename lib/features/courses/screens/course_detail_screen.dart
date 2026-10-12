@@ -265,7 +265,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           if (_selectedTab == 0)
             _buildCurriculumSliver(provider.sections, isEnrolled, course)
           else if (_selectedTab == 1)
-            _buildOverviewSliver(course)
+            _buildOverviewSliver(course, isEnrolled)
           else
             _buildReviewsSliver(provider.courseReviews, isEnrolled),
 
@@ -475,7 +475,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     );
   }
 
-  Widget _buildOverviewSliver(CourseModel course) {
+  Widget _buildOverviewSliver(CourseModel course, bool isEnrolled) {
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -615,6 +615,48 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   ),
                 ),
               ),
+
+            // Enrolled Student Review CTA Card
+            if (isEnrolled) ...[
+              const SizedBox(height: 12),
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: AppColors.primary.withAlpha(50)),
+                ),
+                color: Colors.blue.shade50.withAlpha(90),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.rate_review_rounded, color: AppColors.primary, size: 28),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text('Enjoying this course?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            SizedBox(height: 2),
+                            Text('Share your feedback and rating with other students.',
+                                style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => _showReviewDialog(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        child: const Text('Review'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -917,16 +959,16 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     );
   }
 
-  void _showReviewDialog(BuildContext context) {
-    int rating = 5;
-    final commentController = TextEditingController();
+  void _showReviewDialog(BuildContext context, {ReviewModel? existingReview}) {
+    int rating = existingReview?.rating ?? 5;
+    final commentController = TextEditingController(text: existingReview?.comment ?? '');
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Rate & Review Course'),
+          title: Text(existingReview != null ? 'Edit Your Review' : 'Rate & Review Course'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -965,21 +1007,47 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 final messenger = ScaffoldMessenger.of(context);
                 Navigator.of(ctx).pop();
                 final provider = context.read<CourseProvider>();
-                final ok = await provider.submitCourseReview(
-                  widget.courseId,
-                  rating: rating,
-                  comment: commentController.text,
-                );
-                if (ok && mounted) {
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      backgroundColor: AppColors.success,
-                      content: Text('Thank you! Your review has been submitted.'),
-                    ),
+                final effectiveCourseId = (provider.selectedCourse?.id != null && provider.selectedCourse!.id.isNotEmpty)
+                    ? provider.selectedCourse!.id
+                    : widget.courseId;
+
+                bool ok;
+                if (existingReview != null) {
+                  ok = await provider.updateCourseReview(
+                    existingReview.id,
+                    rating: rating,
+                    comment: commentController.text,
+                    courseId: effectiveCourseId,
+                  );
+                } else {
+                  ok = await provider.submitCourseReview(
+                    effectiveCourseId,
+                    rating: rating,
+                    comment: commentController.text,
                   );
                 }
+
+                if (mounted) {
+                  if (ok) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        backgroundColor: AppColors.success,
+                        content: Text(existingReview != null
+                            ? 'Your review has been updated!'
+                            : '🎉 Thank you! Your review has been submitted.'),
+                      ),
+                    );
+                  } else {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        backgroundColor: AppColors.error,
+                        content: Text(provider.errorMessage ?? 'Failed to submit review.'),
+                      ),
+                    );
+                  }
+                }
               },
-              child: const Text('Submit Review'),
+              child: Text(existingReview != null ? 'Update Review' : 'Submit Review'),
             ),
           ],
         ),

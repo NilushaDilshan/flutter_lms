@@ -114,7 +114,13 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
                     // Create Course Banner Action
                     InkWell(
                       borderRadius: BorderRadius.circular(16),
-                      onTap: () => Navigator.pushNamed(context, AppRoutes.instructorCourseCreate),
+                      onTap: () async {
+                        final provider = context.read<InstructorProvider>();
+                        await Navigator.pushNamed(context, AppRoutes.instructorCourseCreate);
+                        if (mounted) {
+                          provider.loadDashboard();
+                        }
+                      },
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -364,8 +370,9 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
 
     return InkWell(
       borderRadius: BorderRadius.circular(12),
-      onTap: () {
-        Navigator.pushNamed(
+      onTap: () async {
+        final provider = context.read<InstructorProvider>();
+        await Navigator.pushNamed(
           context,
           AppRoutes.instructorCourseStudio,
           arguments: {
@@ -373,6 +380,9 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
             'title': course.title,
           },
         );
+        if (mounted) {
+          provider.loadDashboard();
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(14),

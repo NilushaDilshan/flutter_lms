@@ -179,9 +179,8 @@ class _AdminCourseModerationScreenState extends State<AdminCourseModerationScree
             // Status and Meta Row
             Row(
               children: [
-                // Animated Status Badge (Day 9 AnimatedContainer)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
+                // Status Badge
+                Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: statusColor.withAlpha(20),

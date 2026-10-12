@@ -26,7 +26,6 @@ class _AdminCategoryManagementScreenState extends State<AdminCategoryManagementS
   void _showCategoryDialog({CategoryModel? category}) {
     final isEditing = category != null;
     final nameController = TextEditingController(text: category?.name ?? '');
-    final slugController = TextEditingController(text: category?.slug ?? '');
     final descController = TextEditingController(text: category?.description ?? '');
     final formKey = GlobalKey<FormState>();
 
@@ -50,24 +49,6 @@ class _AdminCategoryManagementScreenState extends State<AdminCategoryManagementS
                   ),
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) return 'Category name is required';
-                    return null;
-                  },
-                  onChanged: (val) {
-                    if (!isEditing) {
-                      slugController.text = val.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
-                    }
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: slugController,
-                  decoration: const InputDecoration(
-                    labelText: 'Slug *',
-                    hintText: 'e.g. mobile-development',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) return 'Slug is required';
                     return null;
                   },
                 ),
@@ -101,27 +82,34 @@ class _AdminCategoryManagementScreenState extends State<AdminCategoryManagementS
                   ok = await provider.updateCategory(
                     category.id,
                     name: nameController.text.trim(),
-                    slug: slugController.text.trim(),
                     description: descController.text.trim(),
                   );
                 } else {
                   ok = await provider.createCategory(
                     name: nameController.text.trim(),
-                    slug: slugController.text.trim(),
                     description: descController.text.trim(),
                   );
                 }
-                if (mounted && ok) {
-                  messenger.showSnackBar(
-                    SnackBar(
-                      backgroundColor: AppColors.success,
-                      content: Text(
-                        isEditing
-                            ? 'Category updated successfully!'
-                            : 'Category created successfully!',
+                if (mounted) {
+                  if (ok) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        backgroundColor: AppColors.success,
+                        content: Text(
+                          isEditing
+                              ? 'Category updated successfully!'
+                              : 'Category created successfully!',
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  } else {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        backgroundColor: AppColors.error,
+                        content: Text(provider.errorMessage ?? 'Category operation failed.'),
+                      ),
+                    );
+                  }
                 }
               }
             },
@@ -148,15 +136,26 @@ class _AdminCategoryManagementScreenState extends State<AdminCategoryManagementS
     if (mounted) {
       final provider = context.read<AdminProvider>();
       final success = await provider.toggleCategoryStatus(category.id, newStatus);
-      if (mounted && success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: newStatus ? AppColors.success : Colors.orange.shade800,
-            content: Text(
-              '"${category.name}" is now ${newStatus ? "active" : "inactive"}.',
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: newStatus ? AppColors.success : Colors.orange.shade800,
+              content: Text(
+                '"${category.name}" is now ${newStatus ? "active" : "inactive"}.',
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.error,
+              content: Text(
+                provider.errorMessage ?? 'Could not change category status.',
+              ),
+            ),
+          );
+        }
       }
     }
   }
@@ -295,9 +294,8 @@ class _AdminCategoryManagementScreenState extends State<AdminCategoryManagementS
                       ),
                       const SizedBox(width: 8),
 
-                      // Animated Status Switch (Day 9 AnimatedContainer feature)
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
+                      // Status Badge
+                      Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: cat.isActive ? Colors.green.shade50 : Colors.grey.shade100,

@@ -88,7 +88,17 @@ class _CourseCreateEditScreenState extends State<CourseCreateEditScreen> {
 
     final provider = context.read<InstructorProvider>();
     final catId = _selectedCategoryId ??
-        (provider.categories.isNotEmpty ? provider.categories.first.id : 'cat-mobile');
+        (provider.categories.isNotEmpty ? provider.categories.first.id : null);
+
+    if (catId == null || catId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a category for this course.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     if (isEditing) {
       final success = await provider.updateCourse(widget.courseToEdit!.id, {

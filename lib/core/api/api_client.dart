@@ -149,15 +149,11 @@ class ApiClient {
     CancelToken? cancelToken,
   }) async {
     try {
-      final uploadOptions = (options ?? Options()).copyWith(
-        contentType: 'multipart/form-data',
-      );
-
       return await dio.post<T>(
         path,
         data: formData,
         onSendProgress: onSendProgress,
-        options: uploadOptions,
+        options: options,
         cancelToken: cancelToken,
       );
     } on DioException catch (e) {

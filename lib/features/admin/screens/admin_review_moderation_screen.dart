@@ -27,18 +27,28 @@ class _AdminReviewModerationScreenState extends State<AdminReviewModerationScree
     final provider = context.read<AdminProvider>();
     final success = await provider.toggleReviewVisibility(review.id, newVisibility);
 
-    if (mounted && success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: newVisibility ? AppColors.success : Colors.orange.shade800,
-          behavior: SnackBarBehavior.floating,
-          content: Text(
-            newVisibility
-                ? 'Review from ${review.studentName} is now visible to the public.'
-                : 'Review from ${review.studentName} is now hidden from public view.',
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: newVisibility ? AppColors.success : Colors.orange.shade800,
+            behavior: SnackBarBehavior.floating,
+            content: Text(
+              newVisibility
+                  ? 'Review from ${review.studentName} is now visible to the public.'
+                  : 'Review from ${review.studentName} is now hidden from public view.',
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            content: Text(provider.errorMessage ?? 'Failed to update review visibility.'),
+          ),
+        );
+      }
     }
   }
 
@@ -200,9 +210,8 @@ class _AdminReviewModerationScreenState extends State<AdminReviewModerationScree
                     ),
                   ),
 
-                  // Visibility Badge (AnimatedContainer)
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
+                  // Visibility Badge
+                  Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: review.isVisible ? Colors.green.shade50 : Colors.red.shade100,

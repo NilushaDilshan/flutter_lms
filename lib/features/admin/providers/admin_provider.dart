@@ -249,7 +249,7 @@ class AdminProvider extends ChangeNotifier {
 
   Future<bool> createCategory({
     required String name,
-    required String slug,
+    String? slug,
     String? description,
   }) async {
     _isActionLoading = true;
@@ -261,7 +261,6 @@ class AdminProvider extends ChangeNotifier {
         ApiEndpoints.categories,
         data: {
           'name': name.trim(),
-          'slug': slug.trim().toLowerCase(),
           if (description != null && description.isNotEmpty)
             'description': description.trim(),
         },
@@ -270,44 +269,15 @@ class AdminProvider extends ChangeNotifier {
       if (data != null && data['category'] != null) {
         final cat = CategoryModel.fromJson(data['category'] as Map<String, dynamic>);
         _categories.insert(0, cat);
-      } else {
-        _categories.insert(
-          0,
-          CategoryModel(
-            id: 'demo-cat-${DateTime.now().millisecondsSinceEpoch}',
-            name: name,
-            slug: slug,
-            description: description,
-            isActive: true,
-          ),
-        );
+        return true;
       }
-      return true;
+      return false;
     } on ApiException catch (e) {
       _errorMessage = e.message;
-      _categories.insert(
-        0,
-        CategoryModel(
-          id: 'demo-cat-${DateTime.now().millisecondsSinceEpoch}',
-          name: name,
-          slug: slug,
-          description: description,
-          isActive: true,
-        ),
-      );
-      return true;
-    } catch (_) {
-      _categories.insert(
-        0,
-        CategoryModel(
-          id: 'demo-cat-${DateTime.now().millisecondsSinceEpoch}',
-          name: name,
-          slug: slug,
-          description: description,
-          isActive: true,
-        ),
-      );
-      return true;
+      return false;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
     } finally {
       _isActionLoading = false;
       notifyListeners();
@@ -317,7 +287,7 @@ class AdminProvider extends ChangeNotifier {
   Future<bool> updateCategory(
     String id, {
     required String name,
-    required String slug,
+    String? slug,
     String? description,
   }) async {
     _isActionLoading = true;
@@ -325,11 +295,10 @@ class AdminProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiClient.put(
+      final response = await _apiClient.patch(
         ApiEndpoints.categoryById(id),
         data: {
           'name': name.trim(),
-          'slug': slug.trim().toLowerCase(),
           if (description != null) 'description': description.trim(),
         },
       );
@@ -338,38 +307,21 @@ class AdminProvider extends ChangeNotifier {
         final updated = CategoryModel.fromJson(data['category'] as Map<String, dynamic>);
         final idx = _categories.indexWhere((c) => c.id == id);
         if (idx != -1) _categories[idx] = updated;
-      } else {
-        _updateCategoryLocally(id, name: name, slug: slug, description: description);
+        return true;
       }
-      return true;
+      return false;
     } on ApiException catch (e) {
       _errorMessage = e.message;
-      _updateCategoryLocally(id, name: name, slug: slug, description: description);
-      return true;
-    } catch (_) {
-      _updateCategoryLocally(id, name: name, slug: slug, description: description);
-      return true;
+      return false;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
     } finally {
       _isActionLoading = false;
       notifyListeners();
     }
   }
 
-  void _updateCategoryLocally(
-    String id, {
-    required String name,
-    required String slug,
-    String? description,
-  }) {
-    final idx = _categories.indexWhere((c) => c.id == id);
-    if (idx != -1) {
-      _categories[idx] = _categories[idx].copyWith(
-        name: name,
-        slug: slug,
-        description: description,
-      );
-    }
-  }
 
   Future<bool> toggleCategoryStatus(String id, bool isActive) async {
     _isActionLoading = true;
@@ -386,27 +338,18 @@ class AdminProvider extends ChangeNotifier {
         final updated = CategoryModel.fromJson(data['category'] as Map<String, dynamic>);
         final idx = _categories.indexWhere((c) => c.id == id);
         if (idx != -1) _categories[idx] = updated;
-      } else {
-        _toggleCategoryLocally(id, isActive);
+        return true;
       }
-      return true;
+      return false;
     } on ApiException catch (e) {
       _errorMessage = e.message;
-      _toggleCategoryLocally(id, isActive);
-      return true;
-    } catch (_) {
-      _toggleCategoryLocally(id, isActive);
-      return true;
+      return false;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
     } finally {
       _isActionLoading = false;
       notifyListeners();
-    }
-  }
-
-  void _toggleCategoryLocally(String id, bool isActive) {
-    final idx = _categories.indexWhere((c) => c.id == id);
-    if (idx != -1) {
-      _categories[idx] = _categories[idx].copyWith(isActive: isActive);
     }
   }
 
@@ -452,27 +395,18 @@ class AdminProvider extends ChangeNotifier {
         final updated = CourseModel.fromJson(data['course'] as Map<String, dynamic>);
         final idx = _adminCourses.indexWhere((c) => c.id == courseId);
         if (idx != -1) _adminCourses[idx] = updated;
-      } else {
-        _archiveCourseLocally(courseId);
+        return true;
       }
-      return true;
+      return false;
     } on ApiException catch (e) {
       _errorMessage = e.message;
-      _archiveCourseLocally(courseId);
-      return true;
-    } catch (_) {
-      _archiveCourseLocally(courseId);
-      return true;
+      return false;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
     } finally {
       _isActionLoading = false;
       notifyListeners();
-    }
-  }
-
-  void _archiveCourseLocally(String courseId) {
-    final idx = _adminCourses.indexWhere((c) => c.id == courseId);
-    if (idx != -1) {
-      _adminCourses[idx] = _adminCourses[idx].copyWith(status: 'ARCHIVED');
     }
   }
 
@@ -514,8 +448,40 @@ class AdminProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Aggregate reviews from known courses or demo
-      _reviews = _getDemoReviews();
+      // 1. Fetch courses if not already loaded to query their reviews
+      if (_adminCourses.isEmpty) {
+        try {
+          final res = await _apiClient.get(ApiEndpoints.publishedCourses);
+          final data = res.data['data'];
+          if (data != null && data['courses'] is List) {
+            _adminCourses = (data['courses'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map((c) => CourseModel.fromJson(c))
+                .toList();
+          }
+        } catch (_) {}
+      }
+
+      final List<ReviewModel> collected = [];
+      for (final course in _adminCourses) {
+        try {
+          final res = await _apiClient.get(ApiEndpoints.courseReviews(course.id));
+          final data = res.data['data'];
+          if (data != null && data['reviews'] is List) {
+            final courseReviews = (data['reviews'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map((r) => ReviewModel.fromJson(r))
+                .toList();
+            collected.addAll(courseReviews);
+          }
+        } catch (_) {}
+      }
+
+      if (collected.isNotEmpty) {
+        _reviews = collected;
+      } else {
+        _reviews = _getDemoReviews();
+      }
     } catch (_) {
       _reviews = _getDemoReviews();
     } finally {
@@ -545,11 +511,18 @@ class AdminProvider extends ChangeNotifier {
       return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;
-      _toggleReviewLocally(reviewId, isVisible);
-      return true;
-    } catch (_) {
-      _toggleReviewLocally(reviewId, isVisible);
-      return true;
+      if (reviewId.startsWith('rev-') || reviewId.startsWith('demo-')) {
+        _toggleReviewLocally(reviewId, isVisible);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      if (reviewId.startsWith('rev-') || reviewId.startsWith('demo-')) {
+        _toggleReviewLocally(reviewId, isVisible);
+        return true;
+      }
+      _errorMessage = e.toString();
+      return false;
     } finally {
       _isActionLoading = false;
       notifyListeners();

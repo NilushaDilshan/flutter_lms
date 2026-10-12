@@ -69,6 +69,41 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
     }
   }
 
+  // Publish All Sections and Lessons Helper
+  Future<void> _publishAllSectionsAndLessons(InstructorProvider provider) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Publishing sections and lessons...'), duration: Duration(seconds: 1)),
+    );
+    for (final section in provider.sections) {
+      if (!section.isPublished) {
+        await provider.updateSection(section.id, isPublished: true);
+      }
+      for (final lesson in section.lessons) {
+        if (!lesson.isPublished) {
+          await provider.updateLesson(lesson.id, {'isPublished': true});
+        }
+      }
+    }
+    final course = provider.selectedCourse;
+    if (course != null && mounted) {
+      final success = await provider.publishCourse(course.id);
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Course is now published!'), backgroundColor: AppColors.success),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(provider.errorMessage ?? 'Ensure at least one lesson has text content or media before publishing.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   // Publish Course
   Future<void> _handlePublishCourse(CourseModel course) async {
     final confirmed = await ConfirmationDialog.show(
@@ -93,7 +128,12 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
           SnackBar(
             content: Text(provider.errorMessage ?? 'Could not publish course'),
             backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 4),
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Publish All',
+              textColor: Colors.white,
+              onPressed: () => _publishAllSectionsAndLessons(provider),
+            ),
           ),
         );
       }
@@ -196,7 +236,7 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Course Header Banner with Status & Publish Action
-          _buildCourseHeaderCard(course),
+          _buildCourseHeaderCard(provider, course),
           const SizedBox(height: 16),
 
           // Sections Accordion Header
@@ -252,7 +292,7 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
     );
   }
 
-  Widget _buildCourseHeaderCard(CourseModel course) {
+  Widget _buildCourseHeaderCard(InstructorProvider provider, CourseModel course) {
     Color statusColor;
     String statusText = course.status.toUpperCase();
     if (statusText == 'PUBLISHED') {
@@ -262,6 +302,10 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
     } else {
       statusColor = AppColors.warning;
     }
+
+    final hasPublishedSection = provider.sections.any((s) => s.isPublished);
+    final hasPublishedLesson = provider.sections.any((s) => s.isPublished && s.lessons.any((l) => l.isPublished));
+    final canPublish = hasPublishedSection && hasPublishedLesson;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -364,6 +408,92 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
           const Divider(height: 1),
           const SizedBox(height: 10),
 
+          // Publishing Requirements Checklist (only shown when DRAFT)
+          if (course.isDraft) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: canPublish ? Colors.green.shade50 : Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: canPublish ? Colors.green.shade200 : Colors.blue.shade200,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        canPublish ? 'Ready to Publish!' : 'Publishing Requirements:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: canPublish ? Colors.green.shade900 : AppColors.primaryDark,
+                        ),
+                      ),
+                      if (provider.sections.isNotEmpty && !canPublish)
+                        InkWell(
+                          onTap: () => _publishAllSectionsAndLessons(provider),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'Publish All Sections & Lessons',
+                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        hasPublishedSection ? Icons.check_circle : Icons.radio_button_unchecked,
+                        size: 14,
+                        color: hasPublishedSection ? AppColors.success : AppColors.warning,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'At least 1 published section',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: hasPublishedSection ? AppColors.success : AppColors.textSecondary,
+                          fontWeight: hasPublishedSection ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        hasPublishedLesson ? Icons.check_circle : Icons.radio_button_unchecked,
+                        size: 14,
+                        color: hasPublishedLesson ? AppColors.success : AppColors.warning,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'At least 1 published lesson with content',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: hasPublishedLesson ? AppColors.success : AppColors.textSecondary,
+                          fontWeight: hasPublishedLesson ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           // Publishing Actions
           Row(
             children: [
@@ -410,25 +540,51 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
         child: ExpansionTile(
           initiallyExpanded: true,
           tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: section.isPublished ? AppColors.success.withAlpha(20) : AppColors.warning.withAlpha(20),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              section.isPublished ? Icons.check_circle_outline : Icons.visibility_off_outlined,
-              color: section.isPublished ? AppColors.success : AppColors.warning,
-              size: 20,
+          leading: InkWell(
+            onTap: () => provider.updateSection(section.id, isPublished: !section.isPublished),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: section.isPublished ? AppColors.success.withAlpha(20) : AppColors.warning.withAlpha(20),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                section.isPublished ? Icons.check_circle_outline : Icons.visibility_off_outlined,
+                color: section.isPublished ? AppColors.success : AppColors.warning,
+                size: 20,
+              ),
             ),
           ),
           title: Text(
             section.title,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
-          subtitle: Text(
-            '${section.lessons.length} lessons • ${section.isPublished ? 'Published' : 'Draft'}',
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          subtitle: Row(
+            children: [
+              Text(
+                '${section.lessons.length} lessons • ',
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              InkWell(
+                onTap: () => provider.updateSection(section.id, isPublished: !section.isPublished),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: section.isPublished ? AppColors.success.withAlpha(25) : AppColors.warning.withAlpha(25),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    section.isPublished ? 'PUBLISHED' : 'DRAFT (Tap to publish)',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: section.isPublished ? AppColors.success : AppColors.warning,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           trailing: PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, size: 20),
@@ -553,18 +709,21 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
               child: const Text('PREVIEW', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.accent)),
             ),
           const SizedBox(width: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            decoration: BoxDecoration(
-              color: lesson.isPublished ? AppColors.success.withAlpha(20) : AppColors.textMuted.withAlpha(20),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              lesson.isPublished ? 'PUBLISHED' : 'DRAFT',
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-                color: lesson.isPublished ? AppColors.success : AppColors.textMuted,
+          InkWell(
+            onTap: () => _handleToggleLessonPublish(provider, lesson),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              decoration: BoxDecoration(
+                color: lesson.isPublished ? AppColors.success.withAlpha(20) : AppColors.textMuted.withAlpha(20),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                lesson.isPublished ? 'PUBLISHED' : 'DRAFT (Tap to publish)',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: lesson.isPublished ? AppColors.success : AppColors.textMuted,
+                ),
               ),
             ),
           ),
@@ -903,7 +1062,7 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
   void _showAddSectionDialog(BuildContext context, InstructorProvider provider) {
     final titleCtrl = TextEditingController();
     final descCtrl = TextEditingController();
-    bool isPub = false;
+    bool isPub = true;
 
     showDialog(
       context: context,
@@ -1007,7 +1166,7 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
     final durationCtrl = TextEditingController(text: '10');
     LessonType type = LessonType.text;
     bool isPreview = false;
-    bool isPub = false;
+    bool isPub = true;
 
     showDialog(
       context: context,

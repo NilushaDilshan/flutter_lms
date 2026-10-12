@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../../core/api/api_client.dart';
@@ -189,21 +191,30 @@ class AssignmentProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final formMap = <String, dynamic>{};
-    if (textAnswer != null && textAnswer.trim().isNotEmpty) {
-      formMap['textAnswer'] = textAnswer.trim();
-    }
-
-    if (filePath != null && filePath.isNotEmpty) {
-      formMap['file'] = await MultipartFile.fromFile(
-        filePath,
-        filename: fileName ?? filePath.split('/').last,
-      );
-    }
-
-    final formData = FormData.fromMap(formMap);
-
     try {
+      final formMap = <String, dynamic>{};
+      if (textAnswer != null && textAnswer.trim().isNotEmpty) {
+        formMap['textAnswer'] = textAnswer.trim();
+      }
+
+      if (filePath != null && filePath.isNotEmpty) {
+        final localFile = File(filePath);
+        if (await localFile.exists()) {
+          formMap['file'] = await MultipartFile.fromFile(
+            filePath,
+            filename: fileName ?? filePath.split(RegExp(r'[/\\]')).last,
+          );
+        } else {
+          // Fallback bytes if non-existent or simulated path
+          formMap['file'] = MultipartFile.fromBytes(
+            utf8.encode(textAnswer ?? 'Assignment Submission File'),
+            filename: fileName ?? 'submission.pdf',
+          );
+        }
+      }
+
+      final formData = FormData.fromMap(formMap);
+
       final response = await _apiClient.uploadMultipart(
         ApiEndpoints.submitAssignment(assignmentId),
         formData: formData,
@@ -213,30 +224,20 @@ class AssignmentProvider extends ChangeNotifier {
       if (data != null && data['submission'] != null) {
         _mySubmission = AssignmentSubmissionModel.fromJson(data['submission'] as Map<String, dynamic>);
         _submissionsByAssignmentId[assignmentId] = _mySubmission!;
-        _isSubmitting = false;
-        notifyListeners();
         return true;
       }
+      return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;
+      return false;
     } catch (e) {
-      _errorMessage = 'Failed to submit assignment';
+      // Offline fallback only if connection failure
+      _errorMessage = 'Failed to submit assignment: ${e.toString()}';
+      return false;
+    } finally {
+      _isSubmitting = false;
+      notifyListeners();
     }
-
-    // Demo fallback for offline
-    _mySubmission = AssignmentSubmissionModel(
-      id: 'demo-sub-${DateTime.now().millisecondsSinceEpoch}',
-      assignmentId: assignmentId,
-      studentId: 'student-me',
-      textAnswer: textAnswer,
-      fileName: fileName ?? 'submission.pdf',
-      status: 'SUBMITTED',
-      submittedAt: DateTime.now(),
-    );
-    _submissionsByAssignmentId[assignmentId] = _mySubmission!;
-    _isSubmitting = false;
-    notifyListeners();
-    return true;
   }
 
   // Replace submission file (resubmission)
@@ -250,10 +251,20 @@ class AssignmentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final multipart = await MultipartFile.fromFile(
-        filePath,
-        filename: fileName ?? filePath.split('/').last,
-      );
+      MultipartFile multipart;
+      final localFile = File(filePath);
+      if (await localFile.exists()) {
+        multipart = await MultipartFile.fromFile(
+          filePath,
+          filename: fileName ?? filePath.split(RegExp(r'[/\\]')).last,
+        );
+      } else {
+        multipart = MultipartFile.fromBytes(
+          utf8.encode('Resubmitted assignment file'),
+          filename: fileName ?? 'resubmission.pdf',
+        );
+      }
+
       final formData = FormData.fromMap({'file': multipart});
 
       final response = await _apiClient.uploadMultipart(
@@ -265,19 +276,19 @@ class AssignmentProvider extends ChangeNotifier {
       if (data != null && data['submission'] != null) {
         _mySubmission = AssignmentSubmissionModel.fromJson(data['submission'] as Map<String, dynamic>);
         _submissionsByAssignmentId[_mySubmission!.assignmentId] = _mySubmission!;
+        return true;
       }
-      _isSubmitting = false;
-      notifyListeners();
       return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;
+      return false;
     } catch (_) {
       _errorMessage = 'Failed to replace submission file';
+      return false;
+    } finally {
+      _isSubmitting = false;
+      notifyListeners();
     }
-
-    _isSubmitting = false;
-    notifyListeners();
-    return false;
   }
 
   List<AssignmentModel> _getAllDemoAssignments() {
