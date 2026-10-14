@@ -78,19 +78,14 @@ class QuizProvider extends ChangeNotifier {
         final data = response.data['data'];
         if (data != null && data['quizzes'] is List) {
           final list = (data['quizzes'] as List)
-              .map((q) => QuizModel.fromJson(q as Map<String, dynamic>))
+              .whereType<Map>()
+              .map((q) => QuizModel.fromJson(Map<String, dynamic>.from(q)))
               .toList();
           all.addAll(list);
-        } else {
-          all.addAll(_getDemoQuizzes(cId));
         }
       } catch (_) {
-        all.addAll(_getDemoQuizzes(cId));
+        // Keep genuine results
       }
-    }
-
-    if (all.isEmpty) {
-      all = _getAllDemoQuizzes();
     }
 
     final Map<String, QuizModel> unique = {};
@@ -105,10 +100,8 @@ class QuizProvider extends ChangeNotifier {
   // Load quizzes available for a course
   Future<void> loadCourseQuizzes(String courseId) async {
     if (courseId.isEmpty) {
-      await loadQuizzesForCourses([
-        '6a5c39ae384147c91b73906a',
-        'course-2',
-      ]);
+      _quizzes = [];
+      notifyListeners();
       return;
     }
 
@@ -121,16 +114,18 @@ class QuizProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['quizzes'] is List) {
         _quizzes = (data['quizzes'] as List)
-            .map((q) => QuizModel.fromJson(q as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((q) => QuizModel.fromJson(Map<String, dynamic>.from(q)))
             .toList();
       } else {
-        _quizzes = _getDemoQuizzes(courseId);
+        _quizzes = [];
       }
     } on ApiException catch (e) {
       _errorMessage = e.message;
-      _quizzes = _getDemoQuizzes(courseId);
+      _quizzes = [];
     } catch (_) {
-      _quizzes = _getDemoQuizzes(courseId);
+      _errorMessage = 'Failed to load quizzes.';
+      _quizzes = [];
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -147,18 +142,18 @@ class QuizProvider extends ChangeNotifier {
       final response = await _apiClient.get(ApiEndpoints.quizById(quizId));
       final data = response.data['data'];
       if (data != null && data['quiz'] != null) {
-        final quizJson = data['quiz'] as Map<String, dynamic>;
+        final quizJson = Map<String, dynamic>.from(data['quiz'] as Map);
         final questionsJson = (data['questions'] as List?) ?? [];
         final questions = questionsJson
-            .map((q) => QuizQuestionModel.fromJson(q as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((q) => QuizQuestionModel.fromJson(Map<String, dynamic>.from(q)))
             .toList();
         _selectedQuiz = QuizModel.fromJson(quizJson).copyWith(questions: questions);
       }
     } on ApiException catch (e) {
       _errorMessage = e.message;
-      _selectedQuiz ??= _getDemoQuizzes('').firstWhere((q) => q.id == quizId, orElse: () => _getDemoQuizzes('').first);
     } catch (_) {
-      _selectedQuiz ??= _getDemoQuizzes('').firstWhere((q) => q.id == quizId, orElse: () => _getDemoQuizzes('').first);
+      _errorMessage = 'Failed to load quiz details.';
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -175,12 +170,13 @@ class QuizProvider extends ChangeNotifier {
       final response = await _apiClient.post(ApiEndpoints.startQuiz(quizId));
       final data = response.data['data'];
       if (data != null && data['attempt'] != null) {
-        final attempt = QuizAttemptModel.fromJson(data['attempt'] as Map<String, dynamic>);
+        final attempt = QuizAttemptModel.fromJson(Map<String, dynamic>.from(data['attempt'] as Map));
         _activeAttempt = attempt;
 
         if (data['questions'] is List) {
           final questions = (data['questions'] as List)
-              .map((q) => QuizQuestionModel.fromJson(q as Map<String, dynamic>))
+              .whereType<Map>()
+              .map((q) => QuizQuestionModel.fromJson(Map<String, dynamic>.from(q)))
               .toList();
           if (_selectedQuiz != null) {
             _selectedQuiz = _selectedQuiz!.copyWith(questions: questions);
@@ -196,19 +192,9 @@ class QuizProvider extends ChangeNotifier {
       _errorMessage = 'Could not start quiz attempt';
     }
 
-    // Demo fallback for offline
-    final demoAttempt = QuizAttemptModel(
-      id: 'demo-attempt-${DateTime.now().millisecondsSinceEpoch}',
-      quizId: quizId,
-      studentId: 'student-me',
-      status: 'IN_PROGRESS',
-      attemptNumber: 1,
-      startedAt: DateTime.now(),
-    );
-    _activeAttempt = demoAttempt;
     _isSubmitting = false;
     notifyListeners();
-    return demoAttempt;
+    return null;
   }
 
   // Submit attempt with answers
@@ -236,7 +222,7 @@ class QuizProvider extends ChangeNotifier {
 
       final data = response.data['data'];
       if (data != null && data['attempt'] != null) {
-        final attempt = QuizAttemptModel.fromJson(data['attempt'] as Map<String, dynamic>);
+        final attempt = QuizAttemptModel.fromJson(Map<String, dynamic>.from(data['attempt'] as Map));
         _lastResult = attempt;
         _activeAttempt = null;
         _attemptsByQuizId[attempt.quizId] = attempt;
@@ -250,32 +236,12 @@ class QuizProvider extends ChangeNotifier {
     } on ApiException catch (e) {
       _errorMessage = e.message;
     } catch (_) {
-      _errorMessage = 'Submission failed';
+      _errorMessage = 'Submission failed. Please try again.';
     }
 
-    // Demo fallback: calculate demo result so student sees UI feedback
-    final demoResult = QuizAttemptModel(
-      id: attemptId,
-      quizId: _selectedQuiz?.id ?? 'demo-quiz',
-      studentId: 'student-me',
-      score: 8,
-      totalMarks: 10,
-      percentage: 80.0,
-      passed: true,
-      status: 'SUBMITTED',
-      attemptNumber: 1,
-      startedAt: DateTime.now().subtract(const Duration(minutes: 5)),
-      submittedAt: DateTime.now(),
-    );
-    _lastResult = demoResult;
-    _activeAttempt = null;
-    _attemptsByQuizId[demoResult.quizId] = demoResult;
-    if (_selectedQuiz != null) {
-      _attemptsByQuizId[_selectedQuiz!.id] = demoResult;
-    }
     _isSubmitting = false;
     notifyListeners();
-    return demoResult;
+    return null;
   }
 
   // Load previous attempts for a quiz
@@ -285,7 +251,8 @@ class QuizProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['attempts'] is List) {
         _myAttempts = (data['attempts'] as List)
-            .map((a) => QuizAttemptModel.fromJson(a as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((a) => QuizAttemptModel.fromJson(Map<String, dynamic>.from(a)))
             .toList();
         if (_myAttempts.isNotEmpty) {
           final bestOrLast = _myAttempts.firstWhere((a) => a.passed, orElse: () => _myAttempts.first);

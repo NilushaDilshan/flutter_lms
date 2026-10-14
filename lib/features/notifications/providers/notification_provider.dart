@@ -25,13 +25,17 @@ class NotificationProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['notifications'] is List) {
         _notifications = (data['notifications'] as List)
-            .map((n) => NotificationModel.fromJson(n as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((n) => NotificationModel.fromJson(Map<String, dynamic>.from(n)))
             .toList();
         _unreadCount = _notifications.where((n) => !n.isRead).length;
+      } else {
+        _notifications = [];
+        _unreadCount = 0;
       }
     } catch (_) {
-      _notifications = _getDemoNotifications();
-      _unreadCount = _notifications.where((n) => !n.isRead).length;
+      _notifications = [];
+      _unreadCount = 0;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -91,32 +95,5 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  List<NotificationModel> _getDemoNotifications() {
-    return [
-      NotificationModel(
-        id: 'notif-1',
-        type: 'ENROLLMENT',
-        title: 'Welcome to Flutter & Dart Masterclass!',
-        message: 'Your enrollment has been confirmed. Start your first lesson now.',
-        isRead: false,
-        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-      ),
-      NotificationModel(
-        id: 'notif-2',
-        type: 'QUIZ_RESULT',
-        title: 'Quiz Result Available',
-        message: 'You scored 92% in Quiz 2: State Management.',
-        isRead: false,
-        createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-      ),
-      NotificationModel(
-        id: 'notif-3',
-        type: 'ASSIGNMENT_GRADED',
-        title: 'Assignment 1 Graded',
-        message: 'Instructor Nimal graded your assignment submission: 95/100.',
-        isRead: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-    ];
-  }
 }
+

@@ -244,20 +244,9 @@ class InstructorProvider extends ChangeNotifier {
       _errorMessage = 'Failed to update course';
     }
 
-    // Local update fallback
-    final idx = _instructorCourses.indexWhere((c) => c.id == courseId);
-    if (idx != -1) {
-      _instructorCourses[idx] = _instructorCourses[idx].copyWith(
-        title: updateData['title'] as String?,
-        shortDescription: updateData['shortDescription'] as String?,
-        description: updateData['description'] as String?,
-        level: updateData['level'] as String?,
-      );
-      _selectedCourse = _instructorCourses[idx];
-    }
     _isSaving = false;
     notifyListeners();
-    return true;
+    return false;
   }
 
   // 7. Upload Course Thumbnail
@@ -379,9 +368,7 @@ class InstructorProvider extends ChangeNotifier {
         _sections = [];
       }
     } catch (_) {
-      if (_sections.isEmpty) {
-        _sections = _getDemoSections(courseId);
-      }
+      _sections = [];
     }
     notifyListeners();
   }
@@ -421,20 +408,9 @@ class InstructorProvider extends ChangeNotifier {
       _errorMessage = 'Failed to create section';
     }
 
-    // Local fallback
-    final demoSec = SectionModel(
-      id: 'sec-${DateTime.now().millisecondsSinceEpoch}',
-      courseId: courseId,
-      title: title,
-      description: description,
-      order: _sections.length + 1,
-      isPublished: isPublished,
-      lessons: [],
-    );
-    _sections.add(demoSec);
     _isSaving = false;
     notifyListeners();
-    return true;
+    return false;
   }
 
   // 12. Update Section
@@ -590,27 +566,9 @@ class InstructorProvider extends ChangeNotifier {
       _errorMessage = 'Failed to create lesson';
     }
 
-    // Local fallback
-    final demoLesson = LessonModel(
-      id: 'les-${DateTime.now().millisecondsSinceEpoch}',
-      courseId: _selectedCourse?.id ?? '',
-      sectionId: sectionId,
-      title: title,
-      description: description,
-      lessonType: lessonType,
-      textContent: textContent,
-      durationMinutes: durationMinutes,
-      isPreview: isPreview,
-      isPublished: isPublished,
-    );
-    final secIdx = _sections.indexWhere((s) => s.id == sectionId);
-    if (secIdx != -1) {
-      final updatedLessons = List<LessonModel>.from(_sections[secIdx].lessons)..add(demoLesson);
-      _sections[secIdx] = _sections[secIdx].copyWith(lessons: updatedLessons);
-    }
     _isSaving = false;
     notifyListeners();
-    return true;
+    return false;
   }
 
   // 15. Update Lesson & Publish State
@@ -783,9 +741,7 @@ class InstructorProvider extends ChangeNotifier {
         _courseEnrollments = [];
       }
     } catch (_) {
-      if (_courseEnrollments.isEmpty) {
-        _courseEnrollments = _getDemoEnrollments(courseId);
-      }
+      _courseEnrollments = [];
     }
     notifyListeners();
   }
@@ -804,9 +760,7 @@ class InstructorProvider extends ChangeNotifier {
         _courseQuizzes = [];
       }
     } catch (_) {
-      if (_courseQuizzes.isEmpty) {
-        _courseQuizzes = _getDemoQuizzes(courseId);
-      }
+      _courseQuizzes = [];
     }
     notifyListeners();
   }
@@ -853,22 +807,9 @@ class InstructorProvider extends ChangeNotifier {
       _errorMessage = 'Failed to create quiz';
     }
 
-    final demoQuiz = QuizModel(
-      id: 'quiz-${DateTime.now().millisecondsSinceEpoch}',
-      courseId: courseId,
-      sectionId: sectionId,
-      title: title,
-      description: description,
-      passingScore: passingScore,
-      timeLimitMinutes: timeLimitMinutes,
-      maxAttempts: maxAttempts,
-      isPublished: false,
-      questions: [],
-    );
-    _courseQuizzes.add(demoQuiz);
     _isSaving = false;
     notifyListeners();
-    return true;
+    return false;
   }
 
   // 20b. Update Quiz
@@ -1043,9 +984,7 @@ class InstructorProvider extends ChangeNotifier {
         _quizAttempts = [];
       }
     } catch (_) {
-      if (_quizAttempts.isEmpty) {
-        _quizAttempts = _getDemoAttempts(quizId);
-      }
+      _quizAttempts = [];
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -1066,9 +1005,7 @@ class InstructorProvider extends ChangeNotifier {
         _courseAssignments = [];
       }
     } catch (_) {
-      if (_courseAssignments.isEmpty) {
-        _courseAssignments = _getDemoAssignments(courseId);
-      }
+      _courseAssignments = [];
     }
     notifyListeners();
   }
@@ -1115,20 +1052,9 @@ class InstructorProvider extends ChangeNotifier {
       _errorMessage = 'Failed to create assignment';
     }
 
-    final demoAssignment = AssignmentModel(
-      id: 'assign-${DateTime.now().millisecondsSinceEpoch}',
-      courseId: courseId,
-      sectionId: sectionId,
-      title: title,
-      description: description,
-      maxMarks: maximumMarks,
-      dueDate: dueDate,
-      isPublished: false,
-    );
-    _courseAssignments.add(demoAssignment);
     _isSaving = false;
     notifyListeners();
-    return true;
+    return false;
   }
 
   // 25b. Update Assignment
@@ -1216,9 +1142,7 @@ class InstructorProvider extends ChangeNotifier {
         _assignmentSubmissions = [];
       }
     } catch (_) {
-      if (_assignmentSubmissions.isEmpty) {
-        _assignmentSubmissions = _getDemoSubmissions(assignmentId);
-      }
+      _assignmentSubmissions = [];
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -1262,28 +1186,9 @@ class InstructorProvider extends ChangeNotifier {
       _errorMessage = 'Failed to submit grade';
     }
 
-    // Local fallback
-    final idx = _assignmentSubmissions.indexWhere((s) => s.id == submissionId);
-    if (idx != -1) {
-      _assignmentSubmissions[idx] = AssignmentSubmissionModel(
-        id: submissionId,
-        assignmentId: _assignmentSubmissions[idx].assignmentId,
-        studentId: _assignmentSubmissions[idx].studentId,
-        studentName: _assignmentSubmissions[idx].studentName,
-        studentEmail: _assignmentSubmissions[idx].studentEmail,
-        textAnswer: _assignmentSubmissions[idx].textAnswer,
-        fileUrl: _assignmentSubmissions[idx].fileUrl,
-        fileName: _assignmentSubmissions[idx].fileName,
-        status: status,
-        marksAwarded: marksAwarded,
-        feedback: feedback,
-        submittedAt: _assignmentSubmissions[idx].submittedAt,
-        gradedAt: DateTime.now(),
-      );
-    }
     _isSaving = false;
     notifyListeners();
-    return true;
+    return false;
   }
 
   // 29. Remove Course Thumbnail
@@ -1337,10 +1242,14 @@ class InstructorProvider extends ChangeNotifier {
       _courseQuizzes.removeWhere((q) => q.id == quizId);
       notifyListeners();
       return true;
-    } catch (_) {
-      _courseQuizzes.removeWhere((q) => q.id == quizId);
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
       notifyListeners();
-      return true;
+      return false;
+    } catch (_) {
+      _errorMessage = 'Failed to delete quiz';
+      notifyListeners();
+      return false;
     }
   }
 
@@ -1417,10 +1326,14 @@ class InstructorProvider extends ChangeNotifier {
       _courseAssignments.removeWhere((a) => a.id == assignmentId);
       notifyListeners();
       return true;
-    } catch (_) {
-      _courseAssignments.removeWhere((a) => a.id == assignmentId);
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
       notifyListeners();
-      return true;
+      return false;
+    } catch (_) {
+      _errorMessage = 'Failed to delete assignment';
+      notifyListeners();
+      return false;
     }
   }
 
@@ -1495,177 +1408,5 @@ class InstructorProvider extends ChangeNotifier {
       ),
     ];
   }
-
-  List<SectionModel> _getDemoSections(String courseId) {
-    return [
-      SectionModel(
-        id: 'sec-1',
-        courseId: courseId,
-        title: 'Section 1: Flutter Fundamentals',
-        description: 'Core concepts of stateless and stateful widgets.',
-        order: 1,
-        isPublished: true,
-        lessons: [
-          LessonModel(
-            id: 'les-1',
-            courseId: courseId,
-            sectionId: 'sec-1',
-            title: 'Lesson 1.1: Widget Tree Architecture',
-            lessonType: LessonType.text,
-            textContent: 'Flutter renders widgets into Element and RenderObject trees...',
-            durationMinutes: 12,
-            isPublished: true,
-            order: 1,
-          ),
-          LessonModel(
-            id: 'les-2',
-            courseId: courseId,
-            sectionId: 'sec-1',
-            title: 'Lesson 1.2: Video Overview of Layouts',
-            lessonType: LessonType.video,
-            videoUrl: 'https://sample-videos.com/video123.mp4',
-            durationMinutes: 25,
-            isPublished: true,
-            order: 2,
-          ),
-        ],
-      ),
-      SectionModel(
-        id: 'sec-2',
-        courseId: courseId,
-        title: 'Section 2: Reactive State Management',
-        description: 'Managing application state cleanly with Provider.',
-        order: 2,
-        isPublished: false,
-        lessons: [
-          LessonModel(
-            id: 'les-3',
-            courseId: courseId,
-            sectionId: 'sec-2',
-            title: 'Lesson 2.1: ChangeNotifier Deep-dive',
-            lessonType: LessonType.text,
-            textContent: 'ChangeNotifier triggers listeners on state mutations...',
-            durationMinutes: 18,
-            isPublished: false,
-            order: 1,
-          ),
-        ],
-      ),
-    ];
-  }
-
-  List<EnrollmentModel> _getDemoEnrollments(String courseId) {
-    return [
-      EnrollmentModel(
-        id: 'enr-1',
-        courseId: courseId,
-        studentId: 'std-1',
-        studentName: 'Kamal Perera',
-        studentEmail: 'kamal@student.com',
-        status: 'ACTIVE',
-        progressPercentage: 65,
-        enrolledAt: DateTime.now().subtract(const Duration(days: 10)),
-      ),
-      EnrollmentModel(
-        id: 'enr-2',
-        courseId: courseId,
-        studentId: 'std-2',
-        studentName: 'Sanduni Fernando',
-        studentEmail: 'sanduni@student.com',
-        status: 'COMPLETED',
-        progressPercentage: 100,
-        enrolledAt: DateTime.now().subtract(const Duration(days: 20)),
-      ),
-    ];
-  }
-
-  List<QuizModel> _getDemoQuizzes(String courseId) {
-    return [
-      QuizModel(
-        id: 'quiz-flutter-101',
-        courseId: courseId,
-        title: 'Flutter Architecture Assessment',
-        description: 'Test your understanding of Flutter rendering pipeline and widget lifecycle.',
-        passingScore: 70,
-        timeLimitMinutes: 15,
-        maxAttempts: 3,
-        isPublished: true,
-        questions: [
-          QuizQuestionModel(
-            id: 'q1',
-            quizId: 'quiz-flutter-101',
-            questionText: 'What is the root building block of Flutter UI?',
-            questionType: 'SINGLE_CHOICE',
-            marks: 5,
-            options: [
-              QuizOptionModel(id: 'opt1', text: 'Widget'),
-              QuizOptionModel(id: 'opt2', text: 'Activity'),
-            ],
-          ),
-        ],
-      ),
-    ];
-  }
-
-  List<QuizAttemptModel> _getDemoAttempts(String quizId) {
-    return [
-      QuizAttemptModel(
-        id: 'att-1',
-        quizId: quizId,
-        studentId: 'std-1',
-        studentName: 'Kamal Perera',
-        studentEmail: 'kamal@student.com',
-        score: 9,
-        totalMarks: 10,
-        percentage: 90.0,
-        passed: true,
-        status: 'SUBMITTED',
-        attemptNumber: 1,
-        startedAt: DateTime.now().subtract(const Duration(days: 1, hours: 2)),
-        submittedAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-    ];
-  }
-
-  List<AssignmentModel> _getDemoAssignments(String courseId) {
-    return [
-      AssignmentModel(
-        id: 'assign-flutter-crud',
-        courseId: courseId,
-        title: 'Assignment 1: Build a CRUD UI Screen',
-        description: 'Create a Flutter list screen with add, edit, and delete functionality.',
-        maxMarks: 100,
-        dueDate: DateTime.now().add(const Duration(days: 7)),
-        isPublished: true,
-      ),
-    ];
-  }
-
-  List<AssignmentSubmissionModel> _getDemoSubmissions(String assignmentId) {
-    return [
-      AssignmentSubmissionModel(
-        id: 'sub-1',
-        assignmentId: assignmentId,
-        studentId: 'std-1',
-        studentName: 'Kamal Perera',
-        studentEmail: 'kamal@student.com',
-        textAnswer: 'Here is my GitHub repository link and implementation notes.',
-        status: 'SUBMITTED',
-        submittedAt: DateTime.now().subtract(const Duration(hours: 4)),
-      ),
-      AssignmentSubmissionModel(
-        id: 'sub-2',
-        assignmentId: assignmentId,
-        studentId: 'std-2',
-        studentName: 'Sanduni Fernando',
-        studentEmail: 'sanduni@student.com',
-        textAnswer: 'Completed assignment with responsive layouts and local storage.',
-        status: 'GRADED',
-        marksAwarded: 95,
-        feedback: 'Excellent clean architecture and clear UI widgets!',
-        submittedAt: DateTime.now().subtract(const Duration(days: 2)),
-        gradedAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-    ];
-  }
 }
+

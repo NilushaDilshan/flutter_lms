@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -763,6 +764,8 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
             provider.reorderLesson(lesson.id, lesson.order - 1);
           } else if (val == 'move_down') {
             provider.reorderLesson(lesson.id, lesson.order + 1);
+          } else if (val == 'edit') {
+            _showEditLessonDialog(context, provider, lesson);
           } else if (val == 'toggle_publish') {
             _handleToggleLessonPublish(provider, lesson);
           } else if (val == 'upload_media') {
@@ -794,6 +797,16 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
                 ],
               ),
             ),
+          const PopupMenuItem(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit_outlined, size: 18),
+                SizedBox(width: 8),
+                Text('Edit Lesson'),
+              ],
+            ),
+          ),
           PopupMenuItem(
             value: 'toggle_publish',
             child: Text(lesson.isPublished ? 'Unpublish Lesson' : 'Publish Lesson'),
@@ -971,6 +984,11 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
                   );
                 },
               ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                tooltip: 'Delete Quiz',
+                onPressed: () => _handleDeleteQuiz(context, provider, quiz),
+              ),
             ],
           ),
         ],
@@ -1005,6 +1023,37 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
             'Max Marks: ${assignment.maxMarks} • Due: ${assignment.dueDate != null ? assignment.dueDate!.toString().split(' ')[0] : 'No deadline'}',
             style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
+          if (assignment.attachmentUrl != null) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.attach_file, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      assignment.attachmentName ?? 'Assignment Attachment',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  InkWell(
+                    onTap: () => provider.deleteAssignmentAttachment(assignment.id),
+                    child: const Icon(Icons.close, size: 14, color: AppColors.error),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -1014,6 +1063,12 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
                   icon: const Icon(Icons.publish, size: 14),
                   label: const Text('Publish', style: TextStyle(fontSize: 11)),
                   onPressed: () => provider.publishAssignment(assignment.id),
+                ),
+              if (assignment.attachmentUrl == null)
+                TextButton.icon(
+                  icon: const Icon(Icons.upload_file, size: 14),
+                  label: const Text('Attachment', style: TextStyle(fontSize: 11)),
+                  onPressed: () => _handleUploadAssignmentAttachment(provider, assignment),
                 ),
               TextButton.icon(
                 icon: const Icon(Icons.rate_review_outlined, size: 14),
@@ -1029,6 +1084,11 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
                     },
                   );
                 },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                tooltip: 'Delete Assignment',
+                onPressed: () => _handleDeleteAssignment(context, provider, assignment),
               ),
             ],
           ),
@@ -1350,6 +1410,72 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
     }
   }
 
+  void _showEditLessonDialog(BuildContext context, InstructorProvider provider, LessonModel lesson) {
+    final titleCtrl = TextEditingController(text: lesson.title);
+    final descCtrl = TextEditingController(text: lesson.description ?? '');
+    final contentCtrl = TextEditingController(text: lesson.textContent ?? '');
+    final durCtrl = TextEditingController(text: lesson.durationMinutes.toString());
+    bool isPreview = lesson.isPreview;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          title: const Text('Edit Lesson'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Title')),
+                const SizedBox(height: 10),
+                TextField(controller: descCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Description (optional)')),
+                const SizedBox(height: 10),
+                TextField(controller: durCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Duration (Minutes)')),
+                if (lesson.isText) ...[
+                  const SizedBox(height: 10),
+                  TextField(controller: contentCtrl, maxLines: 4, decoration: const InputDecoration(labelText: 'Text Content')),
+                ],
+                const SizedBox(height: 10),
+                SwitchListTile(
+                  title: const Text('Free Preview', style: TextStyle(fontSize: 14)),
+                  value: isPreview,
+                  onChanged: (val) => setDlgState(() => isPreview = val),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                if (titleCtrl.text.trim().isNotEmpty) {
+                  final updateData = <String, dynamic>{
+                    'title': titleCtrl.text.trim(),
+                    'description': descCtrl.text.trim(),
+                    'durationMinutes': int.tryParse(durCtrl.text) ?? lesson.durationMinutes,
+                    'isPreview': isPreview,
+                  };
+                  if (lesson.isText) {
+                    updateData['textContent'] = contentCtrl.text.trim();
+                  }
+                  final ok = await provider.updateLesson(lesson.id, updateData);
+                  if (ctx.mounted) Navigator.pop(dialogCtx);
+                  if (!ok && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(provider.errorMessage ?? 'Update failed'), backgroundColor: AppColors.error),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save Changes'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showCreateQuizDialog(BuildContext context, InstructorProvider provider) {
     final titleCtrl = TextEditingController();
     final passCtrl = TextEditingController(text: '70');
@@ -1388,6 +1514,25 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
         ],
       ),
     );
+  }
+
+  Future<void> _handleDeleteQuiz(BuildContext context, InstructorProvider provider, dynamic quiz) async {
+    final confirmed = await ConfirmationDialog.show(
+      context,
+      title: 'Delete Quiz',
+      message: 'Are you sure you want to delete "${quiz.title}"?',
+      confirmText: 'Delete',
+      confirmColor: AppColors.error,
+      icon: Icons.delete_outline,
+    );
+    if (confirmed) {
+      final success = await provider.deleteQuiz(quiz.id);
+      if (!success && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(provider.errorMessage ?? 'Failed to delete quiz'), backgroundColor: AppColors.error),
+        );
+      }
+    }
   }
 
   void _showAddQuizQuestionDialog(BuildContext context, InstructorProvider provider, String quizId) {
@@ -1448,49 +1593,126 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
     );
   }
 
+  Future<void> _handleUploadAssignmentAttachment(InstructorProvider provider, dynamic assignment) async {
+    try {
+      final files = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx', 'zip', 'txt', 'png', 'jpg', 'jpeg'],
+      );
+      if (files.isEmpty) return;
+      final filePath = files.first.path;
+      if (filePath == null) return;
+
+      final success = await provider.uploadAssignmentAttachment(assignment.id, XFile(filePath));
+      if (!mounted) return;
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Attachment uploaded successfully!'), backgroundColor: AppColors.success),
+        );
+        provider.loadCourseAssignments(widget.courseId);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(provider.errorMessage ?? 'Failed to upload attachment'), backgroundColor: AppColors.error),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Attachment upload error: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeleteAssignment(BuildContext context, InstructorProvider provider, dynamic assignment) async {
+    final confirmed = await ConfirmationDialog.show(
+      context,
+      title: 'Delete Assignment',
+      message: 'Are you sure you want to delete "${assignment.title}"?',
+      confirmText: 'Delete',
+      confirmColor: AppColors.error,
+      icon: Icons.delete_outline,
+    );
+    if (confirmed) {
+      final success = await provider.deleteAssignment(assignment.id);
+      if (!success && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(provider.errorMessage ?? 'Failed to delete assignment'), backgroundColor: AppColors.error),
+        );
+      }
+    }
+  }
+
   void _showCreateAssignmentDialog(BuildContext context, InstructorProvider provider) {
     final titleCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     final instrCtrl = TextEditingController(text: 'Submit your solution via PDF or text link.');
     final marksCtrl = TextEditingController(text: '100');
+    DateTime selectedDueDate = DateTime.now().add(const Duration(days: 7));
 
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Create Assignment'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Assignment Title')),
-              const SizedBox(height: 10),
-              TextField(controller: descCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Description')),
-              const SizedBox(height: 10),
-              TextField(controller: instrCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Instructions')),
-              const SizedBox(height: 10),
-              TextField(controller: marksCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Max Marks')),
-            ],
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          title: const Text('Create Assignment'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Assignment Title')),
+                const SizedBox(height: 10),
+                TextField(controller: descCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Description')),
+                const SizedBox(height: 10),
+                TextField(controller: instrCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Instructions')),
+                const SizedBox(height: 10),
+                TextField(controller: marksCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Max Marks')),
+                const SizedBox(height: 12),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today, size: 20, color: AppColors.primary),
+                  title: const Text('Due Date', style: TextStyle(fontSize: 13)),
+                  subtitle: Text(
+                    '${selectedDueDate.year}-${selectedDueDate.month.toString().padLeft(2, '0')}-${selectedDueDate.day.toString().padLeft(2, '0')}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  trailing: TextButton(
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: dialogCtx,
+                        initialDate: selectedDueDate,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setDlgState(() => selectedDueDate = picked);
+                      }
+                    },
+                    child: const Text('Pick Date'),
+                  ),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (titleCtrl.text.trim().isNotEmpty) {
+                  provider.createAssignment(
+                    widget.courseId,
+                    title: titleCtrl.text.trim(),
+                    description: descCtrl.text.trim(),
+                    instructions: instrCtrl.text.trim(),
+                    maximumMarks: int.tryParse(marksCtrl.text) ?? 100,
+                    dueDate: selectedDueDate,
+                  );
+                  Navigator.pop(dialogCtx);
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              if (titleCtrl.text.trim().isNotEmpty) {
-                provider.createAssignment(
-                  widget.courseId,
-                  title: titleCtrl.text.trim(),
-                  description: descCtrl.text.trim(),
-                  instructions: instrCtrl.text.trim(),
-                  maximumMarks: int.tryParse(marksCtrl.text) ?? 100,
-                  dueDate: DateTime.now().add(const Duration(days: 7)),
-                );
-                Navigator.pop(dialogCtx);
-              }
-            },
-            child: const Text('Create'),
-          ),
-        ],
       ),
     );
   }

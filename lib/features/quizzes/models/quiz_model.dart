@@ -46,7 +46,10 @@ class QuizQuestionModel {
       quizId: json['quizId'] as String? ?? '',
       questionText: json['questionText'] as String? ?? '',
       questionType: json['questionType'] as String? ?? 'SINGLE_CHOICE',
-      options: rawOptions.map((e) => QuizOptionModel.fromJson(e as Map<String, dynamic>)).toList(),
+      options: rawOptions
+          .whereType<Map>()
+          .map((e) => QuizOptionModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
       marks: (json['marks'] as num?)?.toInt() ?? 1,
     );
   }
@@ -93,7 +96,10 @@ class QuizModel {
       timeLimitMinutes: (json['timeLimitMinutes'] as num?)?.toInt() ?? 0,
       maxAttempts: (json['maxAttempts'] as num?)?.toInt() ?? 1,
       isPublished: (json['isPublished'] as bool?) ?? true,
-      questions: rawQuestions.map((q) => QuizQuestionModel.fromJson(q as Map<String, dynamic>)).toList(),
+      questions: rawQuestions
+          .whereType<Map>()
+          .map((q) => QuizQuestionModel.fromJson(Map<String, dynamic>.from(q)))
+          .toList(),
     );
   }
 
@@ -154,8 +160,8 @@ class QuizAttemptModel {
     String sId = '';
     String? sName;
     String? sEmail;
-    if (json['studentId'] is Map<String, dynamic>) {
-      final sMap = json['studentId'] as Map<String, dynamic>;
+    if (json['studentId'] is Map) {
+      final sMap = Map<String, dynamic>.from(json['studentId'] as Map);
       sId = sMap['id']?.toString() ?? sMap['_id']?.toString() ?? '';
       final first = sMap['firstName']?.toString() ?? '';
       final last = sMap['lastName']?.toString() ?? '';

@@ -33,29 +33,32 @@ class ProfileProvider extends ChangeNotifier {
 
     try {
       final response = await _apiClient.get(ApiEndpoints.fullProfile);
-      final data = response.data['data'] as Map<String, dynamic>;
+      final rawData = response.data['data'];
+      if (rawData is Map) {
+        final data = Map<String, dynamic>.from(rawData);
+        if (data['user'] is Map) {
+          _user = UserModel.fromJson(Map<String, dynamic>.from(data['user'] as Map));
+        }
 
-      if (data['user'] != null) {
-        _user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
-      }
-
-      final profileData = data['profile'] as Map<String, dynamic>?;
-      if (profileData != null) {
-        if (_user?.isInstructor == true) {
-          _instructorProfile = InstructorProfileModel.fromJson(profileData);
+        final profileData = data['profile'];
+        if (profileData is Map) {
+          final pMap = Map<String, dynamic>.from(profileData);
+          if (_user?.isInstructor == true) {
+            _instructorProfile = InstructorProfileModel.fromJson(pMap);
+          } else {
+            _studentProfile = StudentProfileModel.fromJson(pMap);
+          }
         } else {
-          _studentProfile = StudentProfileModel.fromJson(profileData);
-        }
-      } else {
-        if (data['studentProfile'] != null) {
-          _studentProfile = StudentProfileModel.fromJson(
-            data['studentProfile'] as Map<String, dynamic>,
-          );
-        }
-        if (data['instructorProfile'] != null) {
-          _instructorProfile = InstructorProfileModel.fromJson(
-            data['instructorProfile'] as Map<String, dynamic>,
-          );
+          if (data['studentProfile'] is Map) {
+            _studentProfile = StudentProfileModel.fromJson(
+              Map<String, dynamic>.from(data['studentProfile'] as Map),
+            );
+          }
+          if (data['instructorProfile'] is Map) {
+            _instructorProfile = InstructorProfileModel.fromJson(
+              Map<String, dynamic>.from(data['instructorProfile'] as Map),
+            );
+          }
         }
       }
 
@@ -89,9 +92,12 @@ class ProfileProvider extends ChangeNotifier {
         },
       );
 
-      final data = response.data['data'] as Map<String, dynamic>;
-      if (data['user'] != null) {
-        _user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+      final rawData = response.data['data'];
+      if (rawData is Map) {
+        final data = Map<String, dynamic>.from(rawData);
+        if (data['user'] is Map) {
+          _user = UserModel.fromJson(Map<String, dynamic>.from(data['user'] as Map));
+        }
       }
       _setLoading(false);
     } on ApiException catch (e) {
@@ -118,11 +124,12 @@ class ProfileProvider extends ChangeNotifier {
         },
       );
 
-      final data = response.data['data'] as Map<String, dynamic>;
-      if (data['profile'] != null) {
-        _studentProfile = StudentProfileModel.fromJson(
-          data['profile'] as Map<String, dynamic>,
-        );
+      final rawData = response.data['data'];
+      if (rawData is Map) {
+        final data = Map<String, dynamic>.from(rawData);
+        if (data['profile'] is Map) {
+          _studentProfile = StudentProfileModel.fromJson(Map<String, dynamic>.from(data['profile'] as Map));
+        }
       }
       _setLoading(false);
     } on ApiException catch (e) {
@@ -155,11 +162,12 @@ class ProfileProvider extends ChangeNotifier {
         },
       );
 
-      final data = response.data['data'] as Map<String, dynamic>;
-      if (data['profile'] != null) {
-        _instructorProfile = InstructorProfileModel.fromJson(
-          data['profile'] as Map<String, dynamic>,
-        );
+      final rawData = response.data['data'];
+      if (rawData is Map) {
+        final data = Map<String, dynamic>.from(rawData);
+        if (data['profile'] is Map) {
+          _instructorProfile = InstructorProfileModel.fromJson(Map<String, dynamic>.from(data['profile'] as Map));
+        }
       }
       _setLoading(false);
     } on ApiException catch (e) {
@@ -191,14 +199,17 @@ class ProfileProvider extends ChangeNotifier {
         formData: formData,
       );
 
-      final data = response.data['data'] as Map<String, dynamic>?;
-      if (data != null && data['user'] != null) {
-        _user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
-      } else {
-        final imageUrl = data?['profileImage']?.toString() ??
-            data?['profileImageUrl']?.toString();
-        if (imageUrl != null && _user != null) {
-          _user = _user!.copyWith(profileImage: imageUrl);
+      final rawData = response.data['data'];
+      if (rawData is Map) {
+        final data = Map<String, dynamic>.from(rawData);
+        if (data['user'] is Map) {
+          _user = UserModel.fromJson(Map<String, dynamic>.from(data['user'] as Map));
+        } else {
+          final imageUrl = data['profileImage']?.toString() ??
+              data['profileImageUrl']?.toString();
+          if (imageUrl != null && _user != null) {
+            _user = _user!.copyWith(profileImage: imageUrl);
+          }
         }
       }
 
@@ -219,11 +230,14 @@ class ProfileProvider extends ChangeNotifier {
 
     try {
       final response = await _apiClient.delete(ApiEndpoints.profileImage);
-      final data = response.data['data'] as Map<String, dynamic>?;
-      if (data != null && data['user'] != null) {
-        _user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
-      } else if (_user != null) {
-        _user = _user!.copyWith(profileImage: null);
+      final rawData = response.data['data'];
+      if (rawData is Map) {
+        final data = Map<String, dynamic>.from(rawData);
+        if (data['user'] is Map) {
+          _user = UserModel.fromJson(Map<String, dynamic>.from(data['user'] as Map));
+        } else if (_user != null) {
+          _user = _user!.copyWith(profileImage: null);
+        }
       }
       _setLoading(false);
       notifyListeners();

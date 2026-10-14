@@ -162,11 +162,7 @@ class CourseProvider extends ChangeNotifier {
         }
       }
     } catch (e) {
-      // Fallback demo courses if offline
-      if (refresh) {
-        _courses = _getFilteredDemoCourses();
-        _hasNextPage = false;
-      }
+      _errorMessage = e is ApiException ? e.message : 'Failed to load courses';
     } finally {
       _isLoading = false;
       _isLoadingMore = false;
@@ -197,7 +193,7 @@ class CourseProvider extends ChangeNotifier {
       final courseResponse = await _apiClient.get(ApiEndpoints.courseById(courseId));
       final courseData = courseResponse.data['data'];
       if (courseData != null && courseData['course'] != null) {
-        _selectedCourse = CourseModel.fromJson(courseData['course'] as Map<String, dynamic>);
+        _selectedCourse = CourseModel.fromJson(Map<String, dynamic>.from(courseData['course'] as Map));
       }
 
       // 2. Fetch Course Sections
@@ -230,20 +226,18 @@ class CourseProvider extends ChangeNotifier {
             }
           }
           _sections = populatedSections;
+        } else {
+          _sections = [];
         }
       } catch (_) {
-        _sections = _getDemoSections(courseId);
+        _sections = [];
       }
     } catch (e) {
-      // Offline fallback: find by courseId in loaded courses or fallback demo courses
-      _selectedCourse = _courses.firstWhere(
-        (c) => c.id == courseId,
-        orElse: () => _getDemoCourses().firstWhere(
-          (c) => c.id == courseId,
-          orElse: () => _getDemoCourses().first,
-        ),
-      );
-      _sections = _getDemoSections(courseId);
+      _errorMessage = e is ApiException ? e.message : 'Failed to load course details';
+      final match = _courses.where((c) => c.id == courseId);
+      if (match.isNotEmpty) {
+        _selectedCourse = match.first;
+      }
     } finally {
       final targetCourseId = _selectedCourse?.id ?? courseId;
       if (isEnrolled(courseId) || isEnrolled(targetCourseId)) {
@@ -264,7 +258,7 @@ class CourseProvider extends ChangeNotifier {
       final response = await _apiClient.post(ApiEndpoints.enrollCourse(courseId));
       final data = response.data['data'];
       if (data != null && data['enrollment'] != null) {
-        final newEnrollment = EnrollmentModel.fromJson(data['enrollment'] as Map<String, dynamic>);
+        final newEnrollment = EnrollmentModel.fromJson(Map<String, dynamic>.from(data['enrollment'] as Map));
         _myEnrollments.removeWhere((e) => e.courseId == courseId);
         _myEnrollments.add(newEnrollment);
       }
@@ -300,8 +294,7 @@ class CourseProvider extends ChangeNotifier {
           _isActionLoading = false;
           notifyListeners();
           return false;
-        } else if (e.statusCode != 503 && e.statusCode != 408) {
-          // Real backend validation or client error
+        } else {
           _errorMessage = e.message;
           _isActionLoading = false;
           notifyListeners();
@@ -309,21 +302,10 @@ class CourseProvider extends ChangeNotifier {
         }
       }
 
-      // Offline simulation fallback ONLY if connection timeout / service unavailable
-      final demoEnrollment = EnrollmentModel(
-        id: 'demo-enroll-${DateTime.now().millisecondsSinceEpoch}',
-        studentId: 'student-me',
-        courseId: courseId,
-        course: _selectedCourse,
-        progressPercentage: 0,
-        enrolledAt: DateTime.now(),
-      );
-      _myEnrollments.removeWhere((e) => e.courseId == courseId);
-      _myEnrollments.add(demoEnrollment);
-
+      _errorMessage = 'Enrollment failed. Please check your connection.';
       _isActionLoading = false;
       notifyListeners();
-      return true;
+      return false;
     }
   }
 
@@ -341,12 +323,7 @@ class CourseProvider extends ChangeNotifier {
         return;
       }
     } catch (_) {
-      // Offline fallback
-    }
-
-    if (_myEnrollments.isEmpty) {
-      _myEnrollments = _getDemoStudentEnrollments();
-      notifyListeners();
+      // Keep existing genuine enrollments
     }
   }
 
@@ -546,22 +523,16 @@ class CourseProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['reviews'] is List) {
         _courseReviews = (data['reviews'] as List)
-            .map((r) => ReviewModel.fromJson(r as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((r) => ReviewModel.fromJson(Map<String, dynamic>.from(r)))
             .toList();
+        notifyListeners();
+      } else {
+        _courseReviews = [];
         notifyListeners();
       }
     } catch (_) {
-      _courseReviews = [
-        ReviewModel(
-          id: 'demo-rev-1',
-          courseId: courseId,
-          studentId: 'stud-1',
-          studentName: 'Kasun Bandara',
-          rating: 5,
-          comment: 'Excellent course structure! The explanations of state management and widgets are clear.',
-          createdAt: DateTime.now().subtract(const Duration(days: 3)),
-        ),
-      ];
+      _courseReviews = [];
       notifyListeners();
     }
   }
@@ -586,7 +557,7 @@ class CourseProvider extends ChangeNotifier {
 
       final data = response.data['data'];
       if (data != null && data['review'] != null) {
-        final newReview = ReviewModel.fromJson(data['review'] as Map<String, dynamic>);
+        final newReview = ReviewModel.fromJson(Map<String, dynamic>.from(data['review'] as Map));
         _courseReviews.insert(0, newReview);
       }
       // Refresh course reviews to sync with backend
@@ -625,7 +596,7 @@ class CourseProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['review'] != null) {
-        final updated = ReviewModel.fromJson(data['review'] as Map<String, dynamic>);
+        final updated = ReviewModel.fromJson(Map<String, dynamic>.from(data['review'] as Map));
         final idx = _courseReviews.indexWhere((r) => r.id == reviewId);
         if (idx != -1) _courseReviews[idx] = updated;
       }
@@ -748,82 +719,6 @@ class CourseProvider extends ChangeNotifier {
           'Design robust RESTful APIs with Express',
           'Secure authentication with JWT & refresh tokens',
           'Deploy applications using Docker containers',
-        ],
-      ),
-    ];
-  }
-
-  List<CourseModel> _getFilteredDemoCourses() {
-    var list = _getDemoCourses();
-    if (_selectedCategoryId != null && _selectedCategoryId!.isNotEmpty) {
-      list = list.where((c) => c.categoryId == _selectedCategoryId).toList();
-    }
-    if (_selectedLevel != null && _selectedLevel!.isNotEmpty) {
-      list = list.where((c) => c.level == _selectedLevel).toList();
-    }
-    if (_searchQuery.trim().isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      list = list.where((c) => c.title.toLowerCase().contains(q) || c.shortDescription.toLowerCase().contains(q)).toList();
-    }
-    return list;
-  }
-
-  List<SectionModel> _getDemoSections(String courseId) {
-    return [
-      SectionModel(
-        id: 'sec-1',
-        courseId: courseId,
-        title: '1. Getting Started & Architecture Overview',
-        description: 'Introduction to development environment and fundamentals.',
-        order: 1,
-        lessons: [
-          LessonModel(
-            id: '6a5d1038db5f89beaf1a27b5',
-            courseId: courseId,
-            sectionId: 'sec-1',
-            title: 'Understanding Flutter & Architecture',
-            description: 'Course syllabus and setup documentation.',
-            lessonType: LessonType.document,
-            documentUrl: 'https://flutter.dev/docs/resources/cheatsheet',
-            documentName: 'Flutter_Architecture_Guide.pdf',
-            durationMinutes: 12,
-            order: 1,
-            isPreview: true,
-          ),
-          LessonModel(
-            id: '6a5c66bc384147c91b739075',
-            courseId: courseId,
-            sectionId: 'sec-1',
-            title: 'What Is Flutter & Reactive UI?',
-            description: 'Core concepts of Flutter widgets tree and reactive rendering.',
-            lessonType: LessonType.text,
-            textContent: '''### Welcome to Flutter Development
-
-Flutter is Google's UI toolkit for building beautiful, natively compiled applications for mobile, web, and desktop from a single codebase.
-
-#### Why Flutter?
-- **Fast Development**: Hot reload helps you quickly experiment, build UIs, add features, and fix bugs.
-- **Expressive and Flexible UI**: Built-in Material Design and Cupertino widgets, rich motion APIs, and smooth, natural scrolling.
-- **Native Performance**: Flutter widgets incorporate all critical platform differences such as scrolling, navigation, icons, and fonts.
-
-#### The Widget Tree
-In Flutter, almost everything is a widget. Structural elements (like buttons or menus), stylistic elements (like fonts or colors), and layout aspects (like padding or alignment) are all widgets that compose a hierarchy called the **Widget Tree**.''',
-            durationMinutes: 10,
-            order: 2,
-            isPreview: true,
-          ),
-          LessonModel(
-            id: '6a5c6751384147c91b739076',
-            courseId: courseId,
-            sectionId: 'sec-1',
-            title: 'Installing Flutter & Building Your First App',
-            description: 'Step-by-step video guide to configure IDE and run on physical device.',
-            lessonType: LessonType.video,
-            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-            durationMinutes: 15,
-            order: 3,
-            isPreview: false,
-          ),
         ],
       ),
     ];

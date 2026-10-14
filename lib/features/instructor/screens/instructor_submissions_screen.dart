@@ -33,8 +33,6 @@ class _InstructorSubmissionsScreenState extends State<InstructorSubmissionsScree
         p.loadAssignmentSubmissions(widget.assignmentId);
       } else if (p.courseAssignments.isNotEmpty) {
         p.loadAssignmentSubmissions(p.courseAssignments.first.id);
-      } else {
-        p.loadAssignmentSubmissions('demo-assignment-1');
       }
     });
   }

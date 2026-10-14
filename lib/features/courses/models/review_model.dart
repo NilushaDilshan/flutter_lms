@@ -22,7 +22,7 @@ class ReviewModel {
   factory ReviewModel.fromJson(Map<String, dynamic> json) {
     String name = 'Student';
     if (json['studentId'] is Map) {
-      final user = json['studentId'] as Map<String, dynamic>;
+      final user = Map<String, dynamic>.from(json['studentId'] as Map);
       final first = user['firstName'] ?? '';
       final last = user['lastName'] ?? '';
       name = '$first $last'.trim();

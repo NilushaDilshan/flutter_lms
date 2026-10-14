@@ -50,8 +50,9 @@ class CourseProgressModel {
     int completed = 0;
     final Map<String, String> statusMap = {};
 
-    if (json['enrollment'] is Map<String, dynamic>) {
-      progress = (json['enrollment']['progressPercentage'] as num?)?.toInt() ?? 0;
+    if (json['enrollment'] is Map) {
+      final enr = Map<String, dynamic>.from(json['enrollment'] as Map);
+      progress = (enr['progressPercentage'] as num?)?.toInt() ?? 0;
     } else if (json['progressPercentage'] is num) {
       progress = (json['progressPercentage'] as num).toInt();
     }
@@ -60,10 +61,12 @@ class CourseProgressModel {
       final list = json['lessons'] as List;
       total = list.length;
       for (final item in list) {
-        if (item is Map<String, dynamic>) {
-          final lId = item['id']?.toString() ?? item['_id']?.toString() ?? '';
-          if (item['progress'] is Map<String, dynamic>) {
-            final st = item['progress']['status']?.toString() ?? 'NOT_STARTED';
+        if (item is Map) {
+          final lMap = Map<String, dynamic>.from(item);
+          final lId = lMap['id']?.toString() ?? lMap['_id']?.toString() ?? '';
+          if (lMap['progress'] is Map) {
+            final pMap = Map<String, dynamic>.from(lMap['progress'] as Map);
+            final st = pMap['status']?.toString() ?? 'NOT_STARTED';
             statusMap[lId] = st;
             if (st.toUpperCase() == 'COMPLETED') completed++;
           }
@@ -71,8 +74,8 @@ class CourseProgressModel {
       }
     }
 
-    if (json['courseProgress'] is Map<String, dynamic>) {
-      final cp = json['courseProgress'] as Map<String, dynamic>;
+    if (json['courseProgress'] is Map) {
+      final cp = Map<String, dynamic>.from(json['courseProgress'] as Map);
       progress = (cp['progressPercentage'] as num?)?.toInt() ?? progress;
       total = (cp['totalLessons'] as num?)?.toInt() ?? total;
       completed = (cp['completedLessons'] as num?)?.toInt() ?? completed;

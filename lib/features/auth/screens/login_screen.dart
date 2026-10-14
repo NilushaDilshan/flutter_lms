@@ -87,71 +87,19 @@ class _LoginScreenState extends State<LoginScreen> {
           return;
         }
 
-        // Real server authentication rejection (wrong password, suspended account)
-        final isAuthRejection = e is ApiException && e.statusCode == 401;
+        // Real API or network error handling
+        final errorMsg = e is ApiException
+            ? e.message
+            : 'Login failed. Please check your credentials or network connection.';
 
-        if (!isAuthRejection) {
-          // Offline / Demo fallback: Determine role based on email address
-          final inferredRole = _inferRoleFromEmail(email);
-          final names = _getDemoNamesForRole(inferredRole);
-          final targetRoute = _getRouteForRole(inferredRole);
-          final arguments = _getArgumentsForRole(
-            inferredRole,
-            '${names[0]} ${names[1]}',
-            email,
-          );
-
-          context.read<AuthProvider>().setDemoUser(
-            firstName: names[0],
-            lastName: names[1],
-            email: email,
-            role: inferredRole,
-          );
-
-          Navigator.of(context).pushReplacementNamed(
-            targetRoute,
-            arguments: arguments,
-          );
-        } else {
-          // Real server error (e.g. wrong password)
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-              content: Text(
-                // isAuthRejection = (e is ApiException && e.statusCode == 401)
-                // so e is already promoted to ApiException here
-                (e as dynamic).message as String? ?? 'Login failed. Please check your credentials.',
-              ),
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            content: Text(errorMsg),
+          ),
+        );
       }
-    }
-  }
-
-  String _inferRoleFromEmail(String email) {
-    final lower = email.toLowerCase();
-    if (lower.contains('admin')) {
-      return 'ADMIN';
-    } else if (lower.contains('instructor') ||
-        lower.contains('teacher') ||
-        lower.contains('nimal') ||
-        lower.contains('nimsara')) {
-      return 'INSTRUCTOR';
-    }
-    return 'STUDENT';
-  }
-
-  List<String> _getDemoNamesForRole(String role) {
-    switch (role) {
-      case 'ADMIN':
-        return ['Admin', 'User'];
-      case 'INSTRUCTOR':
-        return ['Nimal', 'Fernando'];
-      case 'STUDENT':
-      default:
-        return ['Kamal', 'Perera'];
     }
   }
 

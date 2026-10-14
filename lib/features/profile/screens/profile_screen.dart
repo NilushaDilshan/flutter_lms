@@ -9,6 +9,7 @@ import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/loading_state_widget.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../auth/models/user_model.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../courses/providers/course_provider.dart';
 import '../providers/profile_provider.dart';
@@ -85,6 +86,179 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (confirmed && mounted) {
       await context.read<ProfileProvider>().deleteProfileImage();
     }
+  }
+
+  void _showEditProfileDialog(BuildContext context, ProfileProvider profileProvider, UserModel? user) {
+    if (user == null) return;
+    final fNameCtrl = TextEditingController(text: user.firstName);
+    final lNameCtrl = TextEditingController(text: user.lastName);
+    final bioCtrl = TextEditingController(text: user.bio ?? '');
+
+    final isInstructor = user.isInstructor;
+    final isStudent = user.isStudent;
+
+    final instr = profileProvider.instructorProfile;
+    final headlineCtrl = TextEditingController(text: instr?.headline ?? '');
+    final qualCtrl = TextEditingController(text: instr?.qualification ?? '');
+    final expCtrl = TextEditingController(text: (instr?.experienceYears ?? 1).toString());
+    final expertiseCtrl = TextEditingController(text: instr?.expertise.join(', ') ?? '');
+    final instrBioCtrl = TextEditingController(text: instr?.biography ?? user.bio ?? '');
+
+    final std = profileProvider.studentProfile;
+    final eduCtrl = TextEditingController(text: std?.educationLevel ?? 'Undergraduate');
+    final goalsCtrl = TextEditingController(text: std?.learningGoals.join(', ') ?? '');
+
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: fNameCtrl,
+                        decoration: const InputDecoration(labelText: 'First Name', border: OutlineInputBorder()),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: lNameCtrl,
+                        decoration: const InputDecoration(labelText: 'Last Name', border: OutlineInputBorder()),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: bioCtrl,
+                  maxLines: 2,
+                  decoration: const InputDecoration(labelText: 'About / Bio', border: OutlineInputBorder()),
+                ),
+                if (isInstructor) ...[
+                  const SizedBox(height: 16),
+                  const Text('Instructor Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: headlineCtrl,
+                    decoration: const InputDecoration(labelText: 'Headline', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: qualCtrl,
+                    decoration: const InputDecoration(labelText: 'Qualification', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: expCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Experience (Years)', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: expertiseCtrl,
+                    decoration: const InputDecoration(labelText: 'Expertise (comma-separated)', border: OutlineInputBorder()),
+                  ),
+                ] else if (isStudent) ...[
+                  const SizedBox(height: 16),
+                  const Text('Student Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: eduCtrl,
+                    decoration: const InputDecoration(labelText: 'Education Level', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: goalsCtrl,
+                    decoration: const InputDecoration(labelText: 'Learning Goals (comma-separated)', border: OutlineInputBorder()),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.pop(dialogCtx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      if (fNameCtrl.text.trim().isEmpty || lNameCtrl.text.trim().isEmpty) {
+                        return;
+                      }
+                      setDlgState(() => isSubmitting = true);
+                      try {
+                        await profileProvider.updateUserAccount(
+                          firstName: fNameCtrl.text.trim(),
+                          lastName: lNameCtrl.text.trim(),
+                          bio: bioCtrl.text.trim(),
+                        );
+
+                        if (isInstructor) {
+                          final expertList = expertiseCtrl.text
+                              .split(',')
+                              .map((e) => e.trim())
+                              .where((e) => e.isNotEmpty)
+                              .toList();
+                          await profileProvider.updateInstructorProfile(
+                            headline: headlineCtrl.text.trim().isNotEmpty ? headlineCtrl.text.trim() : 'Instructor',
+                            qualification: qualCtrl.text.trim().isNotEmpty ? qualCtrl.text.trim() : 'Educator',
+                            experienceYears: int.tryParse(expCtrl.text.trim()) ?? 1,
+                            expertise: expertList.isNotEmpty ? expertList : ['Software Development'],
+                            biography: instrBioCtrl.text.trim().isNotEmpty ? instrBioCtrl.text.trim() : bioCtrl.text.trim(),
+                          );
+                        } else if (isStudent) {
+                          final goalsList = goalsCtrl.text
+                              .split(',')
+                              .map((g) => g.trim())
+                              .where((g) => g.isNotEmpty)
+                              .toList();
+                          await profileProvider.updateStudentProfile(
+                            educationLevel: eduCtrl.text.trim().isNotEmpty ? eduCtrl.text.trim() : 'Undergraduate',
+                            learningGoals: goalsList.isNotEmpty ? goalsList : ['Flutter Development'],
+                          );
+                        }
+
+                        if (ctx.mounted) Navigator.pop(dialogCtx);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              backgroundColor: AppColors.success,
+                              content: Text('Profile updated successfully!'),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        setDlgState(() => isSubmitting = false);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppColors.error,
+                              content: Text(profileProvider.errorMessage ?? 'Failed to update profile: $e'),
+                            ),
+                          );
+                        }
+                      }
+                    },
+              child: isSubmitting
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Save Changes'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _showChangePasswordDialog() async {
@@ -327,6 +501,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 10),
                   StatusBadge(label: role, color: roleColor),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: const Text('Edit Profile'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    ),
+                    onPressed: () => _showEditProfileDialog(context, profileProvider, user),
+                  ),
                   if (user?.profileImage != null) ...[
                     const SizedBox(height: 10),
                     TextButton.icon(

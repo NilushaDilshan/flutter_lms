@@ -14,10 +14,10 @@ void main() {
 
   group('Day 4: Network & API Core Unit Tests', () {
     test('AppConfig sets and formats base URL correctly', () {
-      expect(AppConfig.baseUrl, AppConfig.defaultEmulatorBaseUrl);
+      expect(AppConfig.baseUrl, AppConfig.initialBaseUrl);
       AppConfig.setBaseUrl('http://192.168.1.100:5000/');
       expect(AppConfig.baseUrl, 'http://192.168.1.100:5000');
-      AppConfig.setBaseUrl(AppConfig.defaultEmulatorBaseUrl);
+      AppConfig.setBaseUrl(AppConfig.initialBaseUrl);
     });
 
     test('ApiEndpoints match backend route specification', () {

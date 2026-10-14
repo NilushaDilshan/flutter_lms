@@ -14,8 +14,29 @@ import 'package:flutter_lms/features/auth/screens/login_screen.dart';
 import 'package:flutter_lms/features/auth/screens/otp_verification_screen.dart';
 import 'package:flutter_lms/features/auth/screens/register_screen.dart';
 import 'package:flutter_lms/features/onboarding/screens/onboarding_screen.dart';
+import 'package:flutter_lms/features/auth/models/user_model.dart';
 import 'package:flutter_lms/features/profile/providers/profile_provider.dart';
 import 'package:flutter_lms/features/splash/screens/splash_screen.dart';
+
+class FakeAuthProvider extends AuthProvider {
+  final UserModel Function(String email)? onLogin;
+  FakeAuthProvider({this.onLogin});
+
+  @override
+  Future<UserModel> login({required String email, required String password}) async {
+    if (onLogin != null) {
+      final user = onLogin!(email);
+      setDemoUser(
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+      );
+      return user;
+    }
+    return super.login(email: email, password: password);
+  }
+}
 
 void main() {
   testWidgets('Splash Screen smoke test and navigation to onboarding', (WidgetTester tester) async {
@@ -174,7 +195,18 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider<AuthProvider>(
+            create: (_) => FakeAuthProvider(
+              onLogin: (email) => UserModel(
+                id: 'std-1',
+                firstName: 'Kamal',
+                lastName: 'Perera',
+                email: email,
+                role: 'STUDENT',
+                isEmailVerified: true,
+              ),
+            ),
+          ),
           ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ],
         child: MaterialApp(
@@ -208,7 +240,18 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider<AuthProvider>(
+            create: (_) => FakeAuthProvider(
+              onLogin: (email) => UserModel(
+                id: 'inst-1',
+                firstName: 'Nimal',
+                lastName: 'Fernando',
+                email: email,
+                role: 'INSTRUCTOR',
+                isEmailVerified: true,
+              ),
+            ),
+          ),
           ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ],
         child: MaterialApp(
@@ -239,7 +282,18 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider<AuthProvider>(
+            create: (_) => FakeAuthProvider(
+              onLogin: (email) => UserModel(
+                id: 'adm-1',
+                firstName: 'Admin',
+                lastName: 'User',
+                email: email,
+                role: 'ADMIN',
+                isEmailVerified: true,
+              ),
+            ),
+          ),
           ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ],
         child: MaterialApp(

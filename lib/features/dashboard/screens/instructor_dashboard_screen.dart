@@ -167,15 +167,41 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
                     const SizedBox(height: 18),
 
                     // Metrics Grid
+                    // Metrics Grid (Courses & Engagement)
                     Row(
                       children: [
                         _buildMetricCard(
-                          'Total Courses',
+                          'Total',
                           '${summary?.totalCourses ?? provider.instructorCourses.length}',
                           Icons.auto_stories_outlined,
                           AppColors.instructorRole,
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 8),
+                        _buildMetricCard(
+                          'Published',
+                          '${summary?.publishedCourses ?? provider.instructorCourses.where((c) => c.isPublished).length}',
+                          Icons.check_circle_outline,
+                          AppColors.success,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildMetricCard(
+                          'Drafts',
+                          '${summary?.draftCourses ?? provider.instructorCourses.where((c) => c.isDraft).length}',
+                          Icons.edit_note_outlined,
+                          AppColors.warning,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildMetricCard(
+                          'Archived',
+                          '${summary?.archivedCourses ?? provider.instructorCourses.where((c) => c.isArchived).length}',
+                          Icons.archive_outlined,
+                          Colors.blueGrey,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
                         _buildMetricCard(
                           'Enrollments',
                           '${summary?.totalEnrollments ?? 0}',
@@ -184,28 +210,10 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
                         ),
                         const SizedBox(width: 10),
                         _buildMetricCard(
-                          'To Grade',
+                          'Pending Grading',
                           '${summary?.pendingSubmissions ?? 0}',
                           Icons.assignment_late_outlined,
                           AppColors.accent,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        _buildMetricCard(
-                          'Published',
-                          '${summary?.publishedCourses ?? provider.instructorCourses.where((c) => c.isPublished).length}',
-                          Icons.check_circle_outline,
-                          AppColors.success,
-                        ),
-                        const SizedBox(width: 10),
-                        _buildMetricCard(
-                          'Drafts',
-                          '${summary?.draftCourses ?? provider.instructorCourses.where((c) => c.isDraft).length}',
-                          Icons.edit_note_outlined,
-                          AppColors.warning,
                         ),
                         const SizedBox(width: 10),
                         _buildMetricCard(

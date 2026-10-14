@@ -34,8 +34,9 @@ class EnrollmentModel {
     CourseModel? courseObj;
     String cId = '';
 
-    if (json['courseId'] is Map<String, dynamic>) {
-      courseObj = CourseModel.fromJson(json['courseId'] as Map<String, dynamic>);
+    if (json['courseId'] is Map) {
+      final cMap = Map<String, dynamic>.from(json['courseId'] as Map);
+      courseObj = CourseModel.fromJson(cMap);
       cId = courseObj.id;
     } else {
       cId = json['courseId']?.toString() ?? '';
@@ -45,8 +46,8 @@ class EnrollmentModel {
     String? sName;
     String? sEmail;
     String? sAvatar;
-    if (json['studentId'] is Map<String, dynamic>) {
-      final sMap = json['studentId'] as Map<String, dynamic>;
+    if (json['studentId'] is Map) {
+      final sMap = Map<String, dynamic>.from(json['studentId'] as Map);
       sId = sMap['id']?.toString() ?? sMap['_id']?.toString() ?? '';
       final first = sMap['firstName']?.toString() ?? '';
       final last = sMap['lastName']?.toString() ?? '';
