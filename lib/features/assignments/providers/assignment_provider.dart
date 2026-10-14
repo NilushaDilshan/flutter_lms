@@ -1,108 +1,52 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/api/api_exception.dart';
 import '../models/assignment_model.dart';
+import '../models/assignment_submission_model.dart';
 
+/// Student-facing assignment provider.
+/// Uses the shared [ApiClient] so token refresh, interceptors and
+/// base URL are all consistent with the rest of the app.
 class AssignmentProvider extends ChangeNotifier {
   final ApiClient _apiClient;
 
+  AssignmentProvider({ApiClient? apiClient})
+      : _apiClient = apiClient ?? ApiClient() {
+    _submittedIds.add('assign-flutter-ui');
+  }
+
+  // ── State ─────────────────────────────────────────────────────────────────
   List<AssignmentModel> _assignments = [];
   AssignmentModel? _selectedAssignment;
   AssignmentSubmissionModel? _mySubmission;
-  final Map<String, AssignmentSubmissionModel> _submissionsByAssignmentId = {};
-
   bool _isLoading = false;
   bool _isSubmitting = false;
   String? _errorMessage;
+  final Set<String> _submittedIds = {};
 
-  AssignmentProvider({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient() {
-    _seedInitialSubmissions();
-  }
-
-  void _seedInitialSubmissions() {
-    // Demo student has submitted Assignment 1: Responsive Dashboard UI
-    _submissionsByAssignmentId['assign-flutter-ui'] = AssignmentSubmissionModel(
-      id: 'demo-sub-1',
-      assignmentId: 'assign-flutter-ui',
-      studentId: 'student-me',
-      studentName: 'Kamal Perera',
-      textAnswer: 'Implemented responsive dashboard layouts across mobile and tablet breakpoints using LayoutBuilder.',
-      fileName: 'dashboard_specs.pdf',
-      status: 'SUBMITTED',
-      submittedAt: DateTime.now().subtract(const Duration(days: 1)),
-    );
-  }
-
-  List<AssignmentModel> get assignments => _assignments;
+  // ── Getters ───────────────────────────────────────────────────────────────
+  List<AssignmentModel> get assignments => List.unmodifiable(_assignments);
   AssignmentModel? get selectedAssignment => _selectedAssignment;
   AssignmentSubmissionModel? get mySubmission => _mySubmission;
   bool get isLoading => _isLoading;
   bool get isSubmitting => _isSubmitting;
   String? get errorMessage => _errorMessage;
 
-  bool isAssignmentSubmitted(String assignmentId) {
-    return _submissionsByAssignmentId.containsKey(assignmentId);
-  }
-
-  AssignmentSubmissionModel? getSubmission(String assignmentId) {
-    return _submissionsByAssignmentId[assignmentId];
-  }
-
-  void seedDemoAssignments() {
-    _assignments = _getAllDemoAssignments();
-    notifyListeners();
-  }
-
-  // Load assignments for all enrolled courses
-  Future<void> loadAssignmentsForCourses(List<String> courseIds) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    List<AssignmentModel> all = [];
-    final validIds = courseIds.where((id) => id.isNotEmpty).toSet().toList();
-
-    for (final cId in validIds) {
-      try {
-        final response = await _apiClient.get(ApiEndpoints.courseAssignments(cId));
-        final data = response.data['data'];
-        if (data != null && data['assignments'] is List) {
-          final list = (data['assignments'] as List)
-              .map((a) => AssignmentModel.fromJson(a as Map<String, dynamic>))
-              .toList();
-          all.addAll(list);
-        } else {
-          all.addAll(_getDemoAssignments(cId));
-        }
-      } catch (_) {
-        all.addAll(_getDemoAssignments(cId));
-      }
-    }
-
-    if (all.isEmpty) {
-      all = _getAllDemoAssignments();
-    }
-
-    final Map<String, AssignmentModel> unique = {};
-    for (final a in all) {
-      unique[a.id] = a;
-    }
-    _assignments = unique.values.toList();
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  // Load assignments for a course
-  Future<void> loadCourseAssignments(String courseId) async {
-    if (courseId.isEmpty) {
-      await loadAssignmentsForCourses([
-        '6a5c39ae384147c91b73906a',
-        'course-2',
-      ]);
+  // ── 1. Load assignments for one course ────────────────────────────────────
+  // GET /api/v1/courses/:courseId/assignments
+  Future<void> loadCourseAssignments(
+    String courseId, {
+    bool forceRefresh = false,
+  }) async {
+    final cleanedId = courseId.trim();
+    if (cleanedId.isEmpty) {
+      _errorMessage = 'Course ID is missing. Open Assignments from a course.';
+      _assignments = [];
+      notifyListeners();
       return;
     }
 
@@ -111,139 +55,183 @@ class AssignmentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiClient.get(ApiEndpoints.courseAssignments(courseId));
-      final data = response.data['data'];
-      if (data != null && data['assignments'] is List) {
-        _assignments = (data['assignments'] as List)
-            .map((a) => AssignmentModel.fromJson(a as Map<String, dynamic>))
-            .toList();
-      } else {
-        _assignments = _getDemoAssignments(courseId);
-      }
+      final response =
+          await _apiClient.get(ApiEndpoints.courseAssignments(cleanedId));
+      _assignments = _parseAssignmentList(response.data);
     } on ApiException catch (e) {
       _errorMessage = e.message;
-      _assignments = _getDemoAssignments(courseId);
-    } catch (_) {
-      _assignments = _getDemoAssignments(courseId);
+      _assignments = [];
+    } catch (e) {
+      debugPrint('loadCourseAssignments error: $e');
+      _errorMessage = 'Failed to load assignments. Check backend connection.';
+      _assignments = [];
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Load details and current submission for an assignment
-  Future<void> loadAssignmentDetails(String assignmentId) async {
+  // ── 2. Load assignments across multiple courses ───────────────────────────
+  Future<void> loadAssignmentsForCourses(
+    List<String> courseIds, {
+    bool forceRefresh = false,
+  }) async {
+    final ids = courseIds.map((id) => id.trim()).where((id) => id.isNotEmpty).toSet().toList();
+
+    if (ids.isEmpty) {
+      _assignments = [];
+      _errorMessage = null;
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final response = await _apiClient.get(ApiEndpoints.assignmentById(assignmentId));
-      final data = response.data['data'];
-      if (data != null && data['assignment'] != null) {
-        _selectedAssignment = AssignmentModel.fromJson(data['assignment'] as Map<String, dynamic>);
+      final results = await Future.wait(
+        ids.map((id) async {
+          try {
+            final r = await _apiClient.get(ApiEndpoints.courseAssignments(id));
+            return _parseAssignmentList(r.data);
+          } catch (_) {
+            return <AssignmentModel>[];
+          }
+        }),
+      );
+      final combined = results.expand((list) => list).toList();
+      final unique = <String, AssignmentModel>{};
+      for (final a in combined) {
+        final key = a.id.isNotEmpty ? a.id : '${a.courseId}_${a.title}';
+        unique[key] = a;
       }
-    } on ApiException catch (e) {
-      _errorMessage = e.message;
-      _selectedAssignment ??= _getDemoAssignments('').firstWhere(
-        (a) => a.id == assignmentId,
-        orElse: () => _getDemoAssignments('').first,
-      );
-    } catch (_) {
-      _selectedAssignment ??= _getDemoAssignments('').firstWhere(
-        (a) => a.id == assignmentId,
-        orElse: () => _getDemoAssignments('').first,
-      );
+      _assignments = unique.values.toList();
+    } catch (e) {
+      debugPrint('loadAssignmentsForCourses error: $e');
+      _errorMessage = 'Failed to load assignments.';
+      _assignments = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-
-    // Also fetch student's submission status
-    await loadMySubmission(assignmentId);
-
-    _isLoading = false;
-    notifyListeners();
   }
 
-  // Load my existing submission for an assignment
-  Future<void> loadMySubmission(String assignmentId) async {
+  // ── 3. Load single assignment details + student's own submission ──────────
+  // GET /api/v1/assignments/:id
+  // GET /api/v1/assignments/:id/submission/me
+  Future<void> loadAssignmentDetails(String assignmentId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    _selectedAssignment = null;
+    _mySubmission = null;
+    notifyListeners();
+
     try {
-      final response = await _apiClient.get(ApiEndpoints.myAssignmentSubmission(assignmentId));
-      final data = response.data['data'];
-      if (data != null && data['submission'] != null) {
-        _mySubmission = AssignmentSubmissionModel.fromJson(data['submission'] as Map<String, dynamic>);
-        _submissionsByAssignmentId[assignmentId] = _mySubmission!;
-      } else {
+      // Load assignment
+      try {
+        final r = await _apiClient.get(ApiEndpoints.assignmentById(assignmentId));
+        _selectedAssignment = _parseAssignment(r.data);
+      } on ApiException {
+        // Fallback to already-loaded list
+        _selectedAssignment = _assignments.cast<AssignmentModel?>().firstWhere(
+          (a) => a?.id == assignmentId,
+          orElse: () => null,
+        );
+      }
+
+      // Load student's own submission
+      try {
+        final r = await _apiClient.get(
+          ApiEndpoints.myAssignmentSubmission(assignmentId),
+        );
+        _mySubmission = _parseSubmission(r.data);
+        if (_mySubmission != null) _submittedIds.add(assignmentId);
+      } on ApiException catch (e) {
+        // 404 means not submitted yet — that's fine
+        if (e.statusCode != 404) {
+          debugPrint('loadAssignmentDetails submission error: $e');
+        }
         _mySubmission = null;
       }
-    } catch (_) {
-      // No submission yet or offline
+    } catch (e) {
+      debugPrint('loadAssignmentDetails error: $e');
+      _errorMessage = 'Failed to load assignment details.';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
-  // Submit assignment using FormData only (supporting text-only, file-only, text-plus-file)
+  // ── 4. Submit or re-submit an assignment ──────────────────────────────────
+  // POST /api/v1/assignments/:id/submissions  (multipart/form-data)
   Future<bool> submitAssignment({
     required String assignmentId,
     String? textAnswer,
     String? filePath,
     String? fileName,
+    Uint8List? fileBytes,
   }) async {
     _isSubmitting = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final formMap = <String, dynamic>{};
-      if (textAnswer != null && textAnswer.trim().isNotEmpty) {
-        formMap['textAnswer'] = textAnswer.trim();
-      }
-
+      MultipartFile? multipartFile;
       if (filePath != null && filePath.isNotEmpty) {
-        final localFile = File(filePath);
-        if (await localFile.exists()) {
-          formMap['file'] = await MultipartFile.fromFile(
-            filePath,
-            filename: fileName ?? filePath.split(RegExp(r'[/\\]')).last,
-          );
-        } else {
-          // Fallback bytes if non-existent or simulated path
-          formMap['file'] = MultipartFile.fromBytes(
-            utf8.encode(textAnswer ?? 'Assignment Submission File'),
-            filename: fileName ?? 'submission.pdf',
-          );
-        }
+        multipartFile = await MultipartFile.fromFile(
+          filePath,
+          filename: fileName ?? filePath.split(Platform.pathSeparator).last,
+        );
+      } else if (fileBytes != null && fileName != null) {
+        multipartFile = MultipartFile.fromBytes(fileBytes, filename: fileName);
       }
 
-      final formData = FormData.fromMap(formMap);
+      final formMap = <String, dynamic>{};
+      if (textAnswer != null && textAnswer.isNotEmpty) {
+        formMap['textAnswer'] = textAnswer;
+      }
+      if (multipartFile != null) {
+        formMap['file'] = multipartFile;
+      }
 
       final response = await _apiClient.uploadMultipart(
         ApiEndpoints.submitAssignment(assignmentId),
-        formData: formData,
+        formData: FormData.fromMap(formMap),
       );
 
-      final data = response.data['data'];
-      if (data != null && data['submission'] != null) {
-        _mySubmission = AssignmentSubmissionModel.fromJson(data['submission'] as Map<String, dynamic>);
-        _submissionsByAssignmentId[assignmentId] = _mySubmission!;
-        return true;
-      }
+      _mySubmission = _parseSubmission(response.data) ??
+          AssignmentSubmissionModel(
+            id: 'local-${DateTime.now().millisecondsSinceEpoch}',
+            assignmentId: assignmentId,
+            studentId: '',
+            textAnswer: textAnswer,
+            fileName: fileName,
+            status: 'SUBMITTED',
+            submittedAt: DateTime.now(),
+          );
+      _submittedIds.add(assignmentId);
+      _isSubmitting = false;
+      notifyListeners();
       return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;
-      return false;
     } catch (e) {
-      // Offline fallback only if connection failure
-      _errorMessage = 'Failed to submit assignment: ${e.toString()}';
-      return false;
-    } finally {
-      _isSubmitting = false;
-      notifyListeners();
+      debugPrint('submitAssignment error: $e');
+      _errorMessage = 'Submission failed. Check your connection.';
     }
+
+    _isSubmitting = false;
+    notifyListeners();
+    return false;
   }
 
-  // Replace submission file (resubmission)
-  Future<bool> replaceSubmissionFile(
-    String submissionId,
-    String filePath, {
+  // ── 5. Replace submission file ──────────────────────────────────────────
+  // POST /api/v1/submissions/:submissionId/file  (multipart/form-data: file)
+  Future<bool> replaceSubmissionFile({
+    required String submissionId,
+    required String filePath,
     String? fileName,
   }) async {
     _isSubmitting = true;
@@ -251,116 +239,126 @@ class AssignmentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      MultipartFile multipart;
-      final localFile = File(filePath);
-      if (await localFile.exists()) {
-        multipart = await MultipartFile.fromFile(
-          filePath,
-          filename: fileName ?? filePath.split(RegExp(r'[/\\]')).last,
-        );
-      } else {
-        multipart = MultipartFile.fromBytes(
-          utf8.encode('Resubmitted assignment file'),
-          filename: fileName ?? 'resubmission.pdf',
-        );
-      }
+      final multipartFile = await MultipartFile.fromFile(
+        filePath,
+        filename: fileName ?? filePath.split(Platform.pathSeparator).last,
+      );
 
-      final formData = FormData.fromMap({'file': multipart});
+      final formData = FormData.fromMap({'file': multipartFile});
 
       final response = await _apiClient.uploadMultipart(
         ApiEndpoints.replaceSubmissionFile(submissionId),
         formData: formData,
       );
 
-      final data = response.data['data'];
-      if (data != null && data['submission'] != null) {
-        _mySubmission = AssignmentSubmissionModel.fromJson(data['submission'] as Map<String, dynamic>);
-        _submissionsByAssignmentId[_mySubmission!.assignmentId] = _mySubmission!;
-        return true;
-      }
+      _mySubmission = _parseSubmission(response.data) ?? _mySubmission;
+      _isSubmitting = false;
+      notifyListeners();
       return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;
-      return false;
-    } catch (_) {
-      _errorMessage = 'Failed to replace submission file';
-      return false;
-    } finally {
-      _isSubmitting = false;
-      notifyListeners();
-    }
-  }
-
-  List<AssignmentModel> _getAllDemoAssignments() {
-    return [
-      ..._getDemoAssignments('6a5c39ae384147c91b73906a'),
-      ..._getDemoAssignments('course-2'),
-      ..._getDemoAssignments('course-3'),
-    ];
-  }
-
-  List<AssignmentModel> _getDemoAssignments(String courseId) {
-    if (courseId == 'course-2') {
-      return [
-        AssignmentModel(
-          id: 'assign-bloc-pattern',
-          courseId: 'course-2',
-          courseTitle: 'Mastering Advanced Dart & Flutter Architecture',
-          title: 'Assignment 3: BLoC Pattern & State Hydration',
-          description: 'Implement a production state management layer using Flutter BLoC, HydratedBloc for offline caching, and unit tests.',
-          dueDate: DateTime.now().add(const Duration(days: 10)),
-          maxMarks: 100,
-          attachmentName: 'bloc_architecture_spec.pdf',
-        ),
-        AssignmentModel(
-          id: 'assign-testing-suite',
-          courseId: 'course-2',
-          courseTitle: 'Mastering Advanced Dart & Flutter Architecture',
-          title: 'Assignment 4: Automated Integration Testing Suite',
-          description: 'Write end-to-end integration tests using integration_test package covering the authentication and playback flows.',
-          dueDate: DateTime.now().add(const Duration(days: 18)),
-          maxMarks: 100,
-        ),
-      ];
-    } else if (courseId == 'course-3') {
-      return [
-        AssignmentModel(
-          id: 'assign-auth-gateway',
-          courseId: 'course-3',
-          courseTitle: 'Full-Stack Web & REST APIs with Node.js',
-          title: 'Assignment 5: Microservice Authentication Gateway',
-          description: 'Design and deploy an Express JWT authentication microservice with refresh token rotation and rate limiting middleware.',
-          dueDate: DateTime.now().add(const Duration(days: 5)),
-          maxMarks: 100,
-          attachmentName: 'jwt_gateway_spec.pdf',
-        ),
-      ];
+    } catch (e) {
+      debugPrint('replaceSubmissionFile error: $e');
+      _errorMessage = 'Failed to replace file.';
     }
 
-    final effectiveId = courseId.isNotEmpty ? courseId : '6a5c39ae384147c91b73906a';
-    final effectiveTitle = effectiveId == '6a5c39ae384147c91b73906a'
-        ? 'Flutter Development for Beginners'
-        : 'Flutter Course';
-    return [
+    _isSubmitting = false;
+    notifyListeners();
+    return false;
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  List<AssignmentModel> _parseAssignmentList(dynamic payload) {
+    List<dynamic> raw = [];
+    if (payload is List) {
+      raw = payload;
+    } else if (payload is Map) {
+      final map = Map<String, dynamic>.from(payload);
+      for (final k in ['assignments', 'items', 'results', 'records']) {
+        if (map[k] is List) { raw = map[k] as List; break; }
+      }
+      if (raw.isEmpty) {
+        for (final k in ['data', 'result']) {
+          final nested = map[k];
+          if (nested is List) { raw = nested; break; }
+          if (nested is Map) {
+            for (final nk in ['assignments', 'items', 'results']) {
+              if (nested[nk] is List) { raw = nested[nk] as List; break; }
+            }
+          }
+        }
+      }
+    }
+    return raw
+        .whereType<Map>()
+        .map((item) => AssignmentModel.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+  }
+
+  AssignmentModel? _parseAssignment(dynamic payload) {
+    if (payload is! Map) return null;
+    final map = Map<String, dynamic>.from(payload);
+    final d = map['data'];
+    if (d is Map) {
+      final a = d['assignment'];
+      if (a is Map) return AssignmentModel.fromJson(Map<String, dynamic>.from(a));
+      return AssignmentModel.fromJson(Map<String, dynamic>.from(d));
+    }
+    return null;
+  }
+
+  AssignmentSubmissionModel? _parseSubmission(dynamic payload) {
+    if (payload is! Map) return null;
+    final map = Map<String, dynamic>.from(payload);
+    final d = map['data'];
+    if (d is Map) {
+      final s = d['submission'];
+      if (s is Map) return AssignmentSubmissionModel.fromJson(Map<String, dynamic>.from(s));
+      return AssignmentSubmissionModel.fromJson(Map<String, dynamic>.from(d));
+    }
+    return null;
+  }
+
+
+  void clearAssignments() {
+    _assignments = [];
+    _selectedAssignment = null;
+    _mySubmission = null;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  // ── Test / Demo helpers ───────────────────────────────────────────────────
+
+  bool isAssignmentSubmitted(String assignmentId) =>
+      _submittedIds.contains(assignmentId);
+
+  void seedDemoAssignments() {
+    _assignments = [
       AssignmentModel(
         id: 'assign-flutter-ui',
-        courseId: effectiveId,
-        courseTitle: effectiveTitle,
-        title: 'Assignment 1: Responsive Dashboard UI',
-        description: 'Build a multi-column responsive dashboard in Flutter using LayoutBuilder and MediaQuery. Support phone and tablet orientations.',
-        dueDate: DateTime.now().add(const Duration(days: 7)),
-        maxMarks: 100,
-        attachmentName: 'dashboard_specs.pdf',
+        courseId: 'course-1',
+        title: 'Assignment 1: Build a Responsive UI',
+        description: 'Create a responsive Flutter screen for mobile and tablet.',
+        instructions: 'Use LayoutBuilder and MediaQuery.',
+        maximumMarks: 100,
+        dueDate: DateTime.now().add(const Duration(days: 3)),
+        isPublished: true,
+        status: 'SUBMITTED',
       ),
       AssignmentModel(
-        id: 'assign-api-integration',
-        courseId: effectiveId,
-        courseTitle: effectiveTitle,
-        title: 'Assignment 2: Network Client with Dio',
-        description: 'Implement an authentication interceptor with token refresh mechanism. Test against mock endpoints.',
-        dueDate: DateTime.now().add(const Duration(days: 14)),
-        maxMarks: 100,
+        id: 'assign-state-mgmt',
+        courseId: 'course-1',
+        title: 'Assignment 2: State Management Challenge',
+        description: 'Implement a shopping cart using Provider.',
+        instructions: 'Use ChangeNotifier and Consumer widgets.',
+        maximumMarks: 80,
+        dueDate: DateTime.now().add(const Duration(days: 7)),
+        isPublished: true,
       ),
     ];
+    _submittedIds.add('assign-flutter-ui');
+    notifyListeners();
   }
 }

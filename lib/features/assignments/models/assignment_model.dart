@@ -1,121 +1,111 @@
 class AssignmentModel {
   final String id;
   final String courseId;
-  final String? courseTitle;
   final String? sectionId;
   final String title;
   final String description;
+  final String instructions;
   final DateTime? dueDate;
-  final int maxMarks;
+  final int maximumMarks; // used by assignment_list_screen
+  final int maxMarks;     // alias used by instructor_provider
+  final String? status;
   final String? attachmentUrl;
   final String? attachmentName;
   final bool isPublished;
 
-  AssignmentModel({
+  const AssignmentModel({
     required this.id,
     required this.courseId,
-    this.courseTitle,
     this.sectionId,
     required this.title,
-    required this.description,
+    this.description = '',
+    this.instructions = '',
     this.dueDate,
-    this.maxMarks = 100,
+    int? maximumMarks,
+    int? maxMarks,
+    this.status,
     this.attachmentUrl,
     this.attachmentName,
-    this.isPublished = true,
-  });
+    this.isPublished = false,
+  })  : maximumMarks = maximumMarks ?? maxMarks ?? 100,
+        maxMarks = maxMarks ?? maximumMarks ?? 100;
 
   factory AssignmentModel.fromJson(Map<String, dynamic> json) {
-    return AssignmentModel(
-      id: json['id'] as String? ?? json['_id'] as String? ?? '',
-      courseId: json['courseId'] as String? ?? '',
-      courseTitle: json['courseTitle']?.toString() ??
-          (json['course'] is Map ? json['course']['title']?.toString() : null),
-      sectionId: json['sectionId'] as String?,
-      title: json['title'] as String? ?? 'Untitled Assignment',
-      description: json['description'] as String? ?? '',
-      dueDate: json['dueDate'] != null ? DateTime.tryParse(json['dueDate'].toString()) : null,
-      maxMarks: (json['maxMarks'] as num?)?.toInt() ?? 100,
-      attachmentUrl: json['attachmentUrl'] as String?,
-      attachmentName: json['attachmentName'] as String?,
-      isPublished: (json['isPublished'] as bool?) ?? true,
-    );
-  }
-}
+    final dynamic course = json['course'];
 
-class AssignmentSubmissionModel {
-  final String id;
-  final String assignmentId;
-  final String studentId;
-  final String? studentName;
-  final String? studentEmail;
-  final String? studentProfileImageUrl;
-  final String? textAnswer;
-  final String? fileUrl;
-  final String? fileName;
-  final String status; // SUBMITTED, PENDING_REVIEW, RESUBMISSION_REQUIRED, GRADED
-  final int? marksAwarded;
-  final String? feedback;
-  final DateTime submittedAt;
-  final DateTime? gradedAt;
-
-  AssignmentSubmissionModel({
-    required this.id,
-    required this.assignmentId,
-    required this.studentId,
-    this.studentName,
-    this.studentEmail,
-    this.studentProfileImageUrl,
-    this.textAnswer,
-    this.fileUrl,
-    this.fileName,
-    required this.status,
-    this.marksAwarded,
-    this.feedback,
-    required this.submittedAt,
-    this.gradedAt,
-  });
-
-  bool get isGraded => status.toUpperCase() == 'GRADED';
-  bool get isResubmissionRequired => status.toUpperCase() == 'RESUBMISSION_REQUIRED';
-  bool get isSubmitted => status.toUpperCase() == 'SUBMITTED' || status.toUpperCase() == 'PENDING_REVIEW';
-  bool get canEdit => !isGraded;
-
-  factory AssignmentSubmissionModel.fromJson(Map<String, dynamic> json) {
-    String sId = '';
-    String? sName;
-    String? sEmail;
-    String? sAvatar;
-    if (json['studentId'] is Map<String, dynamic>) {
-      final sMap = json['studentId'] as Map<String, dynamic>;
-      sId = sMap['id']?.toString() ?? sMap['_id']?.toString() ?? '';
-      final first = sMap['firstName']?.toString() ?? '';
-      final last = sMap['lastName']?.toString() ?? '';
-      final full = '$first $last'.trim();
-      sName = full.isNotEmpty ? full : 'Student';
-      sEmail = sMap['email']?.toString();
-      sAvatar = sMap['profileImageUrl']?.toString() ?? sMap['profileImage']?.toString();
-    } else {
-      sId = json['studentId']?.toString() ?? '';
+    String readString(List<String> keys, {String fallback = ''}) {
+      for (final key in keys) {
+        final value = json[key];
+        if (value != null && value.toString().trim().isNotEmpty) {
+          return value.toString();
+        }
+      }
+      return fallback;
     }
 
-    return AssignmentSubmissionModel(
-      id: json['id'] as String? ?? json['_id'] as String? ?? '',
-      assignmentId: json['assignmentId'] as String? ?? '',
-      studentId: sId,
-      studentName: sName,
-      studentEmail: sEmail,
-      studentProfileImageUrl: sAvatar,
-      textAnswer: json['textAnswer'] as String?,
-      fileUrl: json['fileUrl'] as String?,
-      fileName: json['fileName'] as String?,
-      status: (json['status'] as String? ?? 'SUBMITTED').toUpperCase(),
-      marksAwarded: (json['marksAwarded'] as num?)?.toInt(),
-      feedback: json['feedback'] as String?,
-      submittedAt: json['submittedAt'] != null
-          ? DateTime.tryParse(json['submittedAt'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      gradedAt: json['gradedAt'] != null ? DateTime.tryParse(json['gradedAt'].toString()) : null,
+    int readInt(List<String> keys, {int fallback = 100}) {
+      for (final key in keys) {
+        final value = json[key];
+        if (value is num) return value.toInt();
+        if (value != null) {
+          final parsed = int.tryParse(value.toString());
+          if (parsed != null) return parsed;
+        }
+      }
+      return fallback;
+    }
+
+    final rawDueDate = readString(['dueDate', 'due_date', 'deadline']);
+    final parsedDueDate = rawDueDate.isEmpty ? null : DateTime.tryParse(rawDueDate);
+
+    String parsedCourseId = readString(['courseId', 'course_id']);
+    if (parsedCourseId.isEmpty && course is Map) {
+      parsedCourseId = (course['id'] ?? course['_id'] ?? '').toString();
+    }
+
+    final marks = readInt(['maximumMarks', 'maximum_marks', 'maxMarks', 'totalMarks']);
+
+    final attachmentUrlVal = readString(
+      ['attachmentUrl', 'attachment_url', 'fileUrl'],
+    ).isEmpty
+        ? null
+        : readString(['attachmentUrl', 'attachment_url', 'fileUrl']);
+
+    return AssignmentModel(
+      id: readString(['id', '_id', 'assignmentId', 'assignment_id']),
+      courseId: parsedCourseId,
+      sectionId: readString(['sectionId', 'section_id']).isEmpty
+          ? null
+          : readString(['sectionId', 'section_id']),
+      title: readString(['title', 'name'], fallback: 'Untitled Assignment'),
+      description: readString(['description']),
+      instructions: readString(['instructions']),
+      dueDate: parsedDueDate,
+      maximumMarks: marks,
+      maxMarks: marks,
+      status: readString(['status', 'state']).isEmpty ? null : readString(['status', 'state']),
+      attachmentUrl: attachmentUrlVal,
+      attachmentName: readString(['attachmentName', 'attachment_name']).isEmpty
+          ? null
+          : readString(['attachmentName', 'attachment_name']),
+      isPublished: json['isPublished'] == true || json['is_published'] == true,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'courseId': courseId,
+      if (sectionId != null) 'sectionId': sectionId,
+      'title': title,
+      'description': description,
+      'instructions': instructions,
+      'dueDate': dueDate?.toIso8601String(),
+      'maximumMarks': maximumMarks,
+      'status': status,
+      'attachmentUrl': attachmentUrl,
+      'attachmentName': attachmentName,
+      'isPublished': isPublished,
+    };
   }
 }

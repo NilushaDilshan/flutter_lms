@@ -6,6 +6,8 @@ import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/loading_state_widget.dart';
 import '../models/assignment_model.dart';
 import '../providers/assignment_provider.dart';
+import 'dart:typed_data';
+
 
 class AssignmentDetailScreen extends StatefulWidget {
   final String assignmentId;
@@ -25,7 +27,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
   final TextEditingController _textAnswerController = TextEditingController();
   String? _selectedFileName;
   String? _selectedFilePath;
-
+  Uint8List? _selectedFileBytes;
   @override
   void initState() {
     super.initState();
@@ -60,9 +62,11 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     final success = await provider.submitAssignment(
       assignmentId: widget.assignmentId,
       textAnswer: _textAnswerController.text.trim(),
-      filePath: _selectedFilePath,
+       filePath: _selectedFilePath,
       fileName: _selectedFileName,
-    );
+       fileBytes: _selectedFileBytes,
+);
+    
 
     if (mounted) {
       if (success) {
@@ -83,43 +87,31 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
     }
   }
 
-  Future<void> _pickFileAttachment() async {
-    try {
-      final files = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx', 'zip', 'txt', 'png', 'jpg'],
+Future<void> _pickFileAttachment() async {
+  try {
+    final files = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: [
+        'pdf', 'doc', 'docx', 'zip', 'txt', 'png', 'jpg', 'jpeg',
+      ],
+    );
+
+    if (files.isEmpty) return;
+
+    final file = files.first;
+
+    setState(() {
+      _selectedFileName = file.name;
+      _selectedFilePath = file.path;
+    });
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('File selection failed: $e')),
       );
-      if (files.isNotEmpty) {
-        final file = files.first;
-        setState(() {
-          _selectedFileName = file.name;
-          _selectedFilePath = file.path;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: AppColors.primary,
-              content: Text('📎 Attached: ${file.name}'),
-            ),
-          );
-        }
-      }
-    } catch (_) {
-      // Graceful fallback if platform file picker has system restrictions
-      setState(() {
-        _selectedFileName = 'solution_${DateTime.now().millisecondsSinceEpoch % 10000}.pdf';
-        _selectedFilePath = null;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: AppColors.primary,
-            content: Text('📎 Attached: $_selectedFileName'),
-          ),
-        );
-      }
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -349,6 +341,7 @@ class _AssignmentDetailScreenState extends State<AssignmentDetailScreen> {
                                     onPressed: () => setState(() {
                                       _selectedFileName = null;
                                       _selectedFilePath = null;
+                                      _selectedFileBytes = null;
                                     }),
                                   ),
                                 ],

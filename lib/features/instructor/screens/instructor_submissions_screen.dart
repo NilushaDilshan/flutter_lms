@@ -4,7 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/empty_state_widget.dart';
 import '../../../core/widgets/loading_state_widget.dart';
 import '../../../core/widgets/status_badge.dart';
-import '../../assignments/models/assignment_model.dart';
+import '../../assignments/models/assignment_submission_model.dart';
 import '../providers/instructor_provider.dart';
 
 class InstructorSubmissionsScreen extends StatefulWidget {

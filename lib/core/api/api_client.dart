@@ -153,7 +153,10 @@ class ApiClient {
         path,
         data: formData,
         onSendProgress: onSendProgress,
-        options: options,
+        options: options ??
+          Options(
+           contentType: Headers.multipartFormDataContentType,
+    ),
         cancelToken: cancelToken,
       );
     } on DioException catch (e) {

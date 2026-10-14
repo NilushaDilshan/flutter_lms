@@ -94,8 +94,8 @@ class CourseProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['categories'] is List) {
         _categories = (data['categories'] as List)
-            .whereType<Map<String, dynamic>>()
-            .map((c) => CategoryModel.fromJson(c))
+            .whereType<Map>()
+            .map((c) => CategoryModel.fromJson(Map<String, dynamic>.from(c)))
             .where((c) => c.isActive)
             .toList();
         notifyListeners();
@@ -143,8 +143,8 @@ class CourseProvider extends ChangeNotifier {
       if (data != null) {
         if (data['courses'] is List) {
           final fetched = (data['courses'] as List)
-              .whereType<Map<String, dynamic>>()
-              .map((c) => CourseModel.fromJson(c))
+              .whereType<Map>()
+              .map((c) => CourseModel.fromJson(Map<String, dynamic>.from(c)))
               .toList();
           if (refresh) {
             _courses = fetched;
@@ -206,8 +206,8 @@ class CourseProvider extends ChangeNotifier {
         final sectionsData = sectionsResponse.data['data'];
         if (sectionsData != null && sectionsData['sections'] is List) {
           final rawSections = (sectionsData['sections'] as List)
-              .whereType<Map<String, dynamic>>()
-              .map((s) => SectionModel.fromJson(s))
+              .whereType<Map>()
+              .map((s) => SectionModel.fromJson(Map<String, dynamic>.from(s)))
               .toList();
 
           // Fetch lessons for each section
@@ -218,8 +218,8 @@ class CourseProvider extends ChangeNotifier {
               final lessonsData = lessonsResponse.data['data'];
               if (lessonsData != null && lessonsData['lessons'] is List) {
                 final lessonsList = (lessonsData['lessons'] as List)
-                    .whereType<Map<String, dynamic>>()
-                    .map((l) => LessonModel.fromJson(l))
+                    .whereType<Map>()
+                    .map((l) => LessonModel.fromJson(Map<String, dynamic>.from(l)))
                     .toList();
                 populatedSections.add(s.copyWith(lessons: lessonsList));
               } else {
@@ -334,8 +334,8 @@ class CourseProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['enrollments'] is List) {
         _myEnrollments = (data['enrollments'] as List)
-            .whereType<Map<String, dynamic>>()
-            .map((e) => EnrollmentModel.fromJson(e))
+            .whereType<Map>()
+            .map((e) => EnrollmentModel.fromJson(Map<String, dynamic>.from(e)))
             .toList();
         notifyListeners();
         return;

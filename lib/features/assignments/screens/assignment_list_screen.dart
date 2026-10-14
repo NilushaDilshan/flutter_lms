@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../../core/constants/app_colors.dart';
-import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/empty_state_widget.dart';
 import '../../../core/widgets/loading_state_widget.dart';
-import '../../courses/providers/course_provider.dart';
 import '../models/assignment_model.dart';
 import '../providers/assignment_provider.dart';
+import 'assignment_detail_screen.dart';
 
 class AssignmentListScreen extends StatefulWidget {
   final String? courseId;
@@ -19,226 +19,306 @@ class AssignmentListScreen extends StatefulWidget {
   });
 
   @override
-  State<AssignmentListScreen> createState() => _AssignmentListScreenState();
+  State<AssignmentListScreen> createState() =>
+      _AssignmentListScreenState();
 }
 
 class _AssignmentListScreenState extends State<AssignmentListScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      _loadAssignments();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final courseId = widget.courseId?.trim() ?? '';
+
+      if (courseId.isNotEmpty) {
+        context.read<AssignmentProvider>().loadCourseAssignments(courseId);
+      }
     });
   }
 
-  bool _initialLoadDone = false;
+  Future<void> _reloadAssignments() async {
+    final courseId = widget.courseId?.trim() ?? '';
 
-  Future<void> _loadAssignments({bool forceRefresh = false}) async {
-    final provider = context.read<AssignmentProvider>();
+    if (courseId.isEmpty) return;
 
-    // Skip if assignments already loaded on initial load (not a manual refresh)
-    if (!forceRefresh && _initialLoadDone) return;
-    _initialLoadDone = true;
-
-    if (widget.courseId != null && widget.courseId!.isNotEmpty) {
-      await provider.loadCourseAssignments(widget.courseId!);
-    } else {
-      // If assignments are already populated, skip redundant network fetch
-      if (!forceRefresh && provider.assignments.isNotEmpty) return;
-
-      List<String> enrolledIds = [];
-      try {
-        final courseProvider = Provider.of<CourseProvider>(context, listen: false);
-        if (courseProvider.myEnrollments.isEmpty) {
-          await courseProvider.loadMyEnrollments();
-        }
-        enrolledIds = courseProvider.myEnrollments.map((e) => e.courseId).toList();
-      } catch (_) {
-        // Standalone test without CourseProvider
-      }
-      await provider.loadAssignmentsForCourses(
-        enrolledIds.isNotEmpty ? enrolledIds : ['6a5c39ae384147c91b73906a', 'course-2'],
-      );
-    }
+    await context.read<AssignmentProvider>().loadCourseAssignments(
+          courseId,
+          forceRefresh: true,
+        );
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AssignmentProvider>();
+    final courseId = widget.courseId?.trim() ?? '';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(widget.courseTitle != null ? 'Assignments: ${widget.courseTitle}' : 'My Course Assignments'),
+        title: Text(
+          widget.courseTitle?.trim().isNotEmpty == true
+              ? 'Assignments: ${widget.courseTitle}'
+              : 'Assignments',
+        ),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => _loadAssignments(forceRefresh: true),
-        child: provider.isLoading
-            ? const LoadingStateWidget(message: 'Loading course assignments...')
-            : provider.assignments.isEmpty
-                ? EmptyStateWidget(
+      body: Consumer<AssignmentProvider>(
+        builder: (context, provider, child) {
+          if (courseId.isEmpty && provider.assignments.isEmpty) {
+            return _missingCourseIdView();
+          }
+
+          if (provider.isLoading && provider.assignments.isEmpty) {
+            return const LoadingStateWidget(
+              message: 'Loading assignments...',
+            );
+          }
+
+          if (provider.errorMessage != null && provider.assignments.isEmpty) {
+            return _errorView(provider.errorMessage!);
+          }
+
+          if (provider.assignments.isEmpty) {
+            return RefreshIndicator(
+              onRefresh: _reloadAssignments,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  EmptyStateWidget(
                     icon: Icons.assignment_outlined,
-                    title: 'No Assignments',
-                    message: 'There are no assignments published for your enrolled courses yet.',
-                    actionText: 'Back to Courses',
-                    onAction: () => Navigator.of(context).pop(),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: provider.assignments.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final assignment = provider.assignments[index];
-                      return _buildAssignmentCard(assignment, provider);
-                    },
+                    title: 'No assignments available',
+                    message:
+                        'There are no assignments for this course yet. Pull down to refresh.',
                   ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: _reloadAssignments,
+            child: ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              itemCount: provider.assignments.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final assignment = provider.assignments[index];
+                return _assignmentCard(assignment, provider);
+              },
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildAssignmentCard(
-    AssignmentModel assignment,
-    AssignmentProvider provider,
-  ) {
-    final isCompleted = provider.isAssignmentSubmitted(assignment.id);
-    final submission = provider.getSubmission(assignment.id);
-
-    // Find course title if browsing across all enrolled courses
-    final courseName = widget.courseTitle == null ? assignment.courseTitle : null;
+  Widget _assignmentCard(AssignmentModel assignment, AssignmentProvider provider) {
+    final theme = Theme.of(context);
+    final isSubmitted = provider.isAssignmentSubmitted(assignment.id) ||
+        assignment.status == 'SUBMITTED';
 
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       elevation: 2,
-      child: InkWell(
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        onTap: () {
-          Navigator.of(context).pushNamed(
-            AppRoutes.assignmentDetail,
-            arguments: {
-              'assignmentId': assignment.id,
-              'assignment': assignment,
-            },
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (courseName != null && courseName.isNotEmpty) ...[
-                Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.purple.shade50,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.assignment,
+                  size: 30,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Text(
-                    courseName,
-                    style: TextStyle(
-                      fontSize: 11,
+                    assignment.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.purple.shade800,
                     ),
                   ),
                 ),
-              ],
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
+                if (isSubmitted)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.purple.shade50,
+                      color: Colors.green.shade50,
                       borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.success),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.assignment_outlined, size: 14, color: Colors.purple.shade700),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Max ${assignment.maxMarks} marks',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.purple.shade700),
-                        ),
-                      ],
+                    child: const Text(
+                      'COMPLETED',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.success,
+                      ),
                     ),
                   ),
-                  if (isCompleted)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppColors.success),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.check_circle, size: 13, color: AppColors.success),
-                          const SizedBox(width: 4),
-                          Text(
-                            submission?.status == 'GRADED'
-                                ? 'GRADED (${submission?.marksAwarded}/${assignment.maxMarks})'
-                                : 'COMPLETED',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.success,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (assignment.dueDate != null)
-                    Text(
-                      'Due ${assignment.dueDate!.year}-${assignment.dueDate!.month.toString().padLeft(2, '0')}-${assignment.dueDate!.day.toString().padLeft(2, '0')}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                assignment.title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-              ),
-              if (assignment.description.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  assignment.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                ),
               ],
+            ),
+
+            if (assignment.description.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    isCompleted
-                        ? (submission?.status == 'GRADED' ? 'Review Graded Submission' : 'Completed • View Submission')
-                        : 'View & Submit',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: isCompleted ? AppColors.success : AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    isCompleted ? Icons.check_circle_outline_rounded : Icons.arrow_forward_rounded,
-                    size: 16,
-                    color: isCompleted ? AppColors.success : AppColors.primary,
-                  ),
-                ],
+              Text(assignment.description),
+            ],
+
+            if (assignment.instructions.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                assignment.instructions,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
-          ),
+
+            const SizedBox(height: 14),
+
+            Row(
+              children: [
+                const Icon(Icons.grade_outlined, size: 19),
+                const SizedBox(width: 6),
+                Text('Maximum marks: ${assignment.maximumMarks}'),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            Row(
+              children: [
+                const Icon(Icons.calendar_month_outlined, size: 19),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    assignment.dueDate == null
+                        ? 'Due date not specified'
+                        : 'Due: ${_formatDate(assignment.dueDate!)}',
+                  ),
+                ),
+              ],
+            ),
+
+            if (assignment.status != null) ...[
+              const SizedBox(height: 8),
+              Text('Status: ${assignment.status}'),
+            ],
+
+            const SizedBox(height: 14),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AssignmentDetailScreen(
+                        assignmentId: assignment.id,
+                        initialAssignment: assignment,
+                      ),
+                    ),
+                  );
+                },
+                child: Text(
+                  isSubmitted
+                      ? 'Completed • View Submission'
+                      : 'View & Submit',
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _errorView(String message) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 56,
+              color: Colors.red,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Unable to load assignments',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: _reloadAssignments,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try Again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _missingCourseIdView() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: 56,
+              color: Colors.orange,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Course ID is missing',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Open Assignments from a specific course so the '
+              'app knows which assignments to load.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final localDate = date.toLocal();
+
+    final day = localDate.day.toString().padLeft(2, '0');
+    final month = localDate.month.toString().padLeft(2, '0');
+    final year = localDate.year.toString();
+
+    final hour = localDate.hour.toString().padLeft(2, '0');
+    final minute = localDate.minute.toString().padLeft(2, '0');
+
+    return '$day/$month/$year $hour:$minute';
   }
 }

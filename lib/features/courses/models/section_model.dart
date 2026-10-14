@@ -41,8 +41,8 @@ class SectionModel {
     List<LessonModel> lessonsList = [];
     if (json['lessons'] is List) {
       lessonsList = (json['lessons'] as List)
-          .whereType<Map<String, dynamic>>()
-          .map((l) => LessonModel.fromJson(l))
+          .whereType<Map>()
+          .map((l) => LessonModel.fromJson(Map<String, dynamic>.from(l)))
           .toList();
     }
 

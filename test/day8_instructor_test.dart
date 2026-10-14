@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_lms/core/widgets/empty_state_widget.dart';
 import 'package:flutter_lms/core/widgets/loading_state_widget.dart';
-import 'package:flutter_lms/features/assignments/models/assignment_model.dart';
+import 'package:flutter_lms/features/assignments/models/assignment_submission_model.dart';
 import 'package:flutter_lms/features/courses/models/course_model.dart';
 import 'package:flutter_lms/features/courses/models/enrollment_model.dart';
 import 'package:flutter_lms/features/courses/models/lesson_model.dart';

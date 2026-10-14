@@ -642,16 +642,27 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                           ],
                         ),
                       ),
-                      ElevatedButton(
-                        onPressed: () => _showReviewDialog(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                        child: const Text('Review'),
-                      ),
+                     
+SizedBox(
+  width: 90,
+  child: ElevatedButton(
+    onPressed: () => _showReviewDialog(context),
+    style: ElevatedButton.styleFrom(
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 8,
+      ),
+      textStyle: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+    child: const Text('Review'),
+  ),
+),
+                      
                     ],
                   ),
                 ),

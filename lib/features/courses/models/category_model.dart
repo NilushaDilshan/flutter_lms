@@ -14,12 +14,24 @@ class CategoryModel {
   });
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
+    bool parseBool(dynamic val) {
+      if (val is bool) return val;
+      if (val is num) return val != 0;
+      if (val is String) {
+        final s = val.toLowerCase().trim();
+        return s == 'true' || s == '1' || s == 'active';
+      }
+      return true;
+    }
+
+    final rawActive = json['isActive'] ?? json['is_active'] ?? json['status'];
+
     return CategoryModel(
       id: json['id'] as String? ?? json['_id'] as String? ?? '',
       name: json['name'] as String? ?? '',
       slug: json['slug'] as String? ?? '',
       description: json['description'] as String?,
-      isActive: json['isActive'] as bool? ?? true,
+      isActive: rawActive != null ? parseBool(rawActive) : true,
     );
   }
 

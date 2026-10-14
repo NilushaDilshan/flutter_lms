@@ -5,6 +5,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/api/api_exception.dart';
 import '../../assignments/models/assignment_model.dart';
+import '../../assignments/models/assignment_submission_model.dart';
 import '../../courses/models/category_model.dart';
 import '../../courses/models/course_model.dart';
 import '../../courses/models/enrollment_model.dart';
