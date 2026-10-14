@@ -10,14 +10,15 @@ class CourseInstructor {
   });
 
   factory CourseInstructor.fromJson(dynamic json) {
-    if (json is Map<String, dynamic>) {
-      final first = json['firstName']?.toString() ?? '';
-      final last = json['lastName']?.toString() ?? '';
+    if (json is Map) {
+      final map = Map<String, dynamic>.from(json);
+      final first = map['firstName']?.toString() ?? '';
+      final last = map['lastName']?.toString() ?? '';
       final name = '$first $last'.trim();
       return CourseInstructor(
-        id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
-        fullName: name.isNotEmpty ? name : (json['name']?.toString() ?? 'Instructor'),
-        profileImageUrl: json['profileImageUrl']?.toString() ?? json['profileImage']?.toString(),
+        id: map['id']?.toString() ?? map['_id']?.toString() ?? '',
+        fullName: name.isNotEmpty ? name : (map['name']?.toString() ?? 'Instructor'),
+        profileImageUrl: map['profileImageUrl']?.toString() ?? map['profileImage']?.toString(),
       );
     }
     return CourseInstructor(
@@ -74,9 +75,10 @@ class CourseModel {
     // Category extraction
     String catId = '';
     String catName = '';
-    if (json['categoryId'] is Map<String, dynamic>) {
-      catId = json['categoryId']['id']?.toString() ?? json['categoryId']['_id']?.toString() ?? '';
-      catName = json['categoryId']['name']?.toString() ?? '';
+    if (json['categoryId'] is Map) {
+      final catMap = Map<String, dynamic>.from(json['categoryId'] as Map);
+      catId = catMap['id']?.toString() ?? catMap['_id']?.toString() ?? '';
+      catName = catMap['name']?.toString() ?? '';
     } else {
       catId = json['categoryId']?.toString() ?? '';
     }

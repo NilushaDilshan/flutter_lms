@@ -284,7 +284,7 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
               separatorBuilder: (_, index) => const SizedBox(height: 12),
               itemBuilder: (ctx, index) {
                 final section = provider.sections[index];
-                return _buildSectionCard(ctx, provider, section);
+                return _buildSectionCard(ctx, provider, section, index);
               },
             ),
         ],
@@ -528,7 +528,7 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
     );
   }
 
-  Widget _buildSectionCard(BuildContext context, InstructorProvider provider, SectionModel section) {
+  Widget _buildSectionCard(BuildContext context, InstructorProvider provider, SectionModel section, int index) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -589,7 +589,11 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
           trailing: PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, size: 20),
             onSelected: (val) {
-              if (val == 'edit') {
+              if (val == 'move_up') {
+                provider.reorderSection(section.id, section.order - 1);
+              } else if (val == 'move_down') {
+                provider.reorderSection(section.id, section.order + 1);
+              } else if (val == 'edit') {
                 _showEditSectionDialog(context, provider, section);
               } else if (val == 'toggle_publish') {
                 provider.updateSection(section.id, isPublished: !section.isPublished);
@@ -598,6 +602,28 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
               }
             },
             itemBuilder: (_) => [
+              if (index > 0)
+                const PopupMenuItem(
+                  value: 'move_up',
+                  child: Row(
+                    children: [
+                      Icon(Icons.arrow_upward, size: 18),
+                      SizedBox(width: 8),
+                      Text('Move Up'),
+                    ],
+                  ),
+                ),
+              if (index < provider.sections.length - 1)
+                const PopupMenuItem(
+                  value: 'move_down',
+                  child: Row(
+                    children: [
+                      Icon(Icons.arrow_downward, size: 18),
+                      SizedBox(width: 8),
+                      Text('Move Down'),
+                    ],
+                  ),
+                ),
               PopupMenuItem(
                 value: 'toggle_publish',
                 child: Row(
@@ -645,7 +671,7 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
                 itemCount: section.lessons.length,
                 itemBuilder: (ctx, lIdx) {
                   final lesson = section.lessons[lIdx];
-                  return _buildLessonTile(ctx, provider, section, lesson);
+                  return _buildLessonTile(ctx, provider, section, lesson, lIdx);
                 },
               ),
             // Add lesson button at bottom of section
@@ -670,6 +696,7 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
     InstructorProvider provider,
     SectionModel section,
     LessonModel lesson,
+    int lIdx,
   ) {
     IconData typeIcon;
     Color iconColor;
@@ -732,7 +759,11 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
       trailing: PopupMenuButton<String>(
         icon: const Icon(Icons.more_vert, size: 18),
         onSelected: (val) {
-          if (val == 'toggle_publish') {
+          if (val == 'move_up') {
+            provider.reorderLesson(lesson.id, lesson.order - 1);
+          } else if (val == 'move_down') {
+            provider.reorderLesson(lesson.id, lesson.order + 1);
+          } else if (val == 'toggle_publish') {
             _handleToggleLessonPublish(provider, lesson);
           } else if (val == 'upload_media') {
             _handleUploadLessonMedia(provider, lesson);
@@ -741,6 +772,28 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
           }
         },
         itemBuilder: (_) => [
+          if (lIdx > 0)
+            const PopupMenuItem(
+              value: 'move_up',
+              child: Row(
+                children: [
+                  Icon(Icons.arrow_upward, size: 18),
+                  SizedBox(width: 8),
+                  Text('Move Up'),
+                ],
+              ),
+            ),
+          if (lIdx < section.lessons.length - 1)
+            const PopupMenuItem(
+              value: 'move_down',
+              child: Row(
+                children: [
+                  Icon(Icons.arrow_downward, size: 18),
+                  SizedBox(width: 8),
+                  Text('Move Down'),
+                ],
+              ),
+            ),
           PopupMenuItem(
             value: 'toggle_publish',
             child: Text(lesson.isPublished ? 'Unpublish Lesson' : 'Publish Lesson'),

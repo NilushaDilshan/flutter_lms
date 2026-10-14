@@ -75,11 +75,11 @@ class InstructorProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['dashboard'] != null) {
         _dashboardSummary = InstructorDashboardModel.fromJson(
-          data['dashboard'] as Map<String, dynamic>,
+          Map<String, dynamic>.from(data['dashboard'] as Map),
         );
       }
     } catch (_) {
-      _dashboardSummary = _getDemoDashboard();
+      _dashboardSummary ??= _getDemoDashboard();
     }
 
     await loadInstructorCourses();
@@ -96,7 +96,8 @@ class InstructorProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['categories'] is List) {
         _categories = (data['categories'] as List)
-            .map((c) => CategoryModel.fromJson(c as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((c) => CategoryModel.fromJson(Map<String, dynamic>.from(c)))
             .where((c) => c.isActive)
             .toList();
       }
@@ -121,7 +122,8 @@ class InstructorProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['courses'] is List) {
         _instructorCourses = (data['courses'] as List)
-            .map((c) => CourseModel.fromJson(c as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((c) => CourseModel.fromJson(Map<String, dynamic>.from(c)))
             .toList();
       } else {
         _instructorCourses = [];
@@ -144,7 +146,7 @@ class InstructorProvider extends ChangeNotifier {
       final response = await _apiClient.get(ApiEndpoints.instructorCourseById(courseId));
       final data = response.data['data'];
       if (data != null && data['course'] != null) {
-        _selectedCourse = CourseModel.fromJson(data['course'] as Map<String, dynamic>);
+        _selectedCourse = CourseModel.fromJson(Map<String, dynamic>.from(data['course'] as Map));
       }
     } catch (_) {
       _selectedCourse = _instructorCourses.firstWhere(
@@ -194,7 +196,7 @@ class InstructorProvider extends ChangeNotifier {
       final response = await _apiClient.post(ApiEndpoints.createCourse, data: body);
       final data = response.data['data'];
       if (data != null && data['course'] != null) {
-        final newCourse = CourseModel.fromJson(data['course'] as Map<String, dynamic>);
+        final newCourse = CourseModel.fromJson(Map<String, dynamic>.from(data['course'] as Map));
         _instructorCourses.insert(0, newCourse);
         _selectedCourse = newCourse;
         _isSaving = false;
@@ -228,7 +230,7 @@ class InstructorProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['course'] != null) {
-        final updated = CourseModel.fromJson(data['course'] as Map<String, dynamic>);
+        final updated = CourseModel.fromJson(Map<String, dynamic>.from(data['course'] as Map));
         final idx = _instructorCourses.indexWhere((c) => c.id == courseId);
         if (idx != -1) _instructorCourses[idx] = updated;
         if (_selectedCourse?.id == courseId) _selectedCourse = updated;
@@ -277,7 +279,7 @@ class InstructorProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['course'] != null) {
-        final updated = CourseModel.fromJson(data['course'] as Map<String, dynamic>);
+        final updated = CourseModel.fromJson(Map<String, dynamic>.from(data['course'] as Map));
         final idx = _instructorCourses.indexWhere((c) => c.id == courseId);
         if (idx != -1) _instructorCourses[idx] = updated;
         if (_selectedCourse?.id == courseId) _selectedCourse = updated;
@@ -306,7 +308,7 @@ class InstructorProvider extends ChangeNotifier {
       final response = await _apiClient.patch(ApiEndpoints.publishCourse(courseId));
       final data = response.data['data'];
       if (data != null && data['course'] != null) {
-        final updated = CourseModel.fromJson(data['course'] as Map<String, dynamic>);
+        final updated = CourseModel.fromJson(Map<String, dynamic>.from(data['course'] as Map));
         final idx = _instructorCourses.indexWhere((c) => c.id == courseId);
         if (idx != -1) _instructorCourses[idx] = updated;
         if (_selectedCourse?.id == courseId) _selectedCourse = updated;
@@ -344,7 +346,7 @@ class InstructorProvider extends ChangeNotifier {
       final response = await _apiClient.patch(ApiEndpoints.archiveCourse(courseId));
       final data = response.data['data'];
       if (data != null && data['course'] != null) {
-        final updated = CourseModel.fromJson(data['course'] as Map<String, dynamic>);
+        final updated = CourseModel.fromJson(Map<String, dynamic>.from(data['course'] as Map));
         final idx = _instructorCourses.indexWhere((c) => c.id == courseId);
         if (idx != -1) _instructorCourses[idx] = updated;
         if (_selectedCourse?.id == courseId) _selectedCourse = updated;
@@ -370,13 +372,16 @@ class InstructorProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['sections'] is List) {
         _sections = (data['sections'] as List)
-            .map((s) => SectionModel.fromJson(s as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((s) => SectionModel.fromJson(Map<String, dynamic>.from(s)))
             .toList();
       } else {
         _sections = [];
       }
     } catch (_) {
-      _sections = _getDemoSections(courseId);
+      if (_sections.isEmpty) {
+        _sections = _getDemoSections(courseId);
+      }
     }
     notifyListeners();
   }
@@ -404,7 +409,7 @@ class InstructorProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['section'] != null) {
-        final newSection = SectionModel.fromJson(data['section'] as Map<String, dynamic>);
+        final newSection = SectionModel.fromJson(Map<String, dynamic>.from(data['section'] as Map));
         _sections.add(newSection);
         _isSaving = false;
         notifyListeners();
@@ -455,7 +460,7 @@ class InstructorProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['section'] != null) {
-        final updated = SectionModel.fromJson(data['section'] as Map<String, dynamic>);
+        final updated = SectionModel.fromJson(Map<String, dynamic>.from(data['section'] as Map));
         final idx = _sections.indexWhere((s) => s.id == sectionId);
         if (idx != -1) _sections[idx] = updated;
         _isSaving = false;
@@ -479,6 +484,36 @@ class InstructorProvider extends ChangeNotifier {
     _isSaving = false;
     notifyListeners();
     return true;
+  }
+
+  // 12b. Reorder Section
+  Future<bool> reorderSection(String sectionId, int order) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiClient.patch(
+        ApiEndpoints.reorderSection(sectionId),
+        data: {'order': order},
+      );
+      final idx = _sections.indexWhere((s) => s.id == sectionId);
+      if (idx != -1) {
+        _sections[idx] = _sections[idx].copyWith(order: order);
+        _sections.sort((a, b) => a.order.compareTo(b.order));
+      }
+      _isSaving = false;
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+    } catch (_) {
+      _errorMessage = 'Failed to reorder section';
+    }
+
+    _isSaving = false;
+    notifyListeners();
+    return false;
   }
 
   // 13. Delete Section
@@ -539,7 +574,7 @@ class InstructorProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['lesson'] != null) {
-        final newLesson = LessonModel.fromJson(data['lesson'] as Map<String, dynamic>);
+        final newLesson = LessonModel.fromJson(Map<String, dynamic>.from(data['lesson'] as Map));
         final secIdx = _sections.indexWhere((s) => s.id == sectionId);
         if (secIdx != -1) {
           final updatedLessons = List<LessonModel>.from(_sections[secIdx].lessons)..add(newLesson);
@@ -591,7 +626,7 @@ class InstructorProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['lesson'] != null) {
-        final updated = LessonModel.fromJson(data['lesson'] as Map<String, dynamic>);
+        final updated = LessonModel.fromJson(Map<String, dynamic>.from(data['lesson'] as Map));
         _replaceLessonInMemory(updated);
         _isSaving = false;
         notifyListeners();
@@ -612,6 +647,41 @@ class InstructorProvider extends ChangeNotifier {
       return false;
     } catch (_) {
       _errorMessage = 'Failed to update lesson';
+    }
+
+    _isSaving = false;
+    notifyListeners();
+    return false;
+  }
+
+  // 15b. Reorder Lesson
+  Future<bool> reorderLesson(String lessonId, int order) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiClient.patch(
+        ApiEndpoints.reorderLesson(lessonId),
+        data: {'order': order},
+      );
+      for (int i = 0; i < _sections.length; i++) {
+        final lIdx = _sections[i].lessons.indexWhere((l) => l.id == lessonId);
+        if (lIdx != -1) {
+          final updated = List<LessonModel>.from(_sections[i].lessons);
+          updated[lIdx] = updated[lIdx].copyWith(order: order);
+          updated.sort((a, b) => a.order.compareTo(b.order));
+          _sections[i] = _sections[i].copyWith(lessons: updated);
+          break;
+        }
+      }
+      _isSaving = false;
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+    } catch (_) {
+      _errorMessage = 'Failed to reorder lesson';
     }
 
     _isSaving = false;
@@ -640,7 +710,7 @@ class InstructorProvider extends ChangeNotifier {
       final response = await _apiClient.uploadMultipart(endpoint, formData: formData);
       final data = response.data['data'];
       if (data != null && data['lesson'] != null) {
-        final updated = LessonModel.fromJson(data['lesson'] as Map<String, dynamic>);
+        final updated = LessonModel.fromJson(Map<String, dynamic>.from(data['lesson'] as Map));
         _replaceLessonInMemory(updated);
         _isSaving = false;
         notifyListeners();
@@ -706,13 +776,16 @@ class InstructorProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['enrollments'] is List) {
         _courseEnrollments = (data['enrollments'] as List)
-            .map((e) => EnrollmentModel.fromJson(e as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((e) => EnrollmentModel.fromJson(Map<String, dynamic>.from(e)))
             .toList();
       } else {
         _courseEnrollments = [];
       }
     } catch (_) {
-      _courseEnrollments = _getDemoEnrollments(courseId);
+      if (_courseEnrollments.isEmpty) {
+        _courseEnrollments = _getDemoEnrollments(courseId);
+      }
     }
     notifyListeners();
   }
@@ -724,13 +797,16 @@ class InstructorProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['quizzes'] is List) {
         _courseQuizzes = (data['quizzes'] as List)
-            .map((q) => QuizModel.fromJson(q as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((q) => QuizModel.fromJson(Map<String, dynamic>.from(q)))
             .toList();
       } else {
         _courseQuizzes = [];
       }
     } catch (_) {
-      _courseQuizzes = _getDemoQuizzes(courseId);
+      if (_courseQuizzes.isEmpty) {
+        _courseQuizzes = _getDemoQuizzes(courseId);
+      }
     }
     notifyListeners();
   }
@@ -765,7 +841,7 @@ class InstructorProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['quiz'] != null) {
-        final newQuiz = QuizModel.fromJson(data['quiz'] as Map<String, dynamic>);
+        final newQuiz = QuizModel.fromJson(Map<String, dynamic>.from(data['quiz'] as Map));
         _courseQuizzes.add(newQuiz);
         _isSaving = false;
         notifyListeners();
@@ -793,6 +869,37 @@ class InstructorProvider extends ChangeNotifier {
     _isSaving = false;
     notifyListeners();
     return true;
+  }
+
+  // 20b. Update Quiz
+  Future<bool> updateQuiz(String quizId, Map<String, dynamic> updateData) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.patch(
+        ApiEndpoints.quizById(quizId),
+        data: updateData,
+      );
+      final data = response.data['data'];
+      if (data != null && data['quiz'] != null) {
+        final updated = QuizModel.fromJson(Map<String, dynamic>.from(data['quiz'] as Map));
+        final idx = _courseQuizzes.indexWhere((q) => q.id == quizId);
+        if (idx != -1) _courseQuizzes[idx] = updated;
+        _isSaving = false;
+        notifyListeners();
+        return true;
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+    } catch (_) {
+      _errorMessage = 'Failed to update quiz';
+    }
+
+    _isSaving = false;
+    notifyListeners();
+    return false;
   }
 
   // 21. Add Question to Quiz
@@ -823,7 +930,7 @@ class InstructorProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['question'] != null) {
-        final newQ = QuizQuestionModel.fromJson(data['question'] as Map<String, dynamic>);
+        final newQ = QuizQuestionModel.fromJson(Map<String, dynamic>.from(data['question'] as Map));
         final idx = _courseQuizzes.indexWhere((q) => q.id == quizId);
         if (idx != -1) {
           final updatedQuestions = List<QuizQuestionModel>.from(_courseQuizzes[idx].questions)..add(newQ);
@@ -837,6 +944,44 @@ class InstructorProvider extends ChangeNotifier {
       _errorMessage = e.message;
     } catch (_) {
       _errorMessage = 'Failed to add question';
+    }
+
+    _isSaving = false;
+    notifyListeners();
+    return false;
+  }
+
+  // 21b. Update Quiz Question
+  Future<bool> updateQuizQuestion(String questionId, Map<String, dynamic> updateData) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.patch(
+        ApiEndpoints.quizQuestionById(questionId),
+        data: updateData,
+      );
+      final data = response.data['data'];
+      if (data != null && data['question'] != null) {
+        final updatedQ = QuizQuestionModel.fromJson(Map<String, dynamic>.from(data['question'] as Map));
+        for (int i = 0; i < _courseQuizzes.length; i++) {
+          final qIdx = _courseQuizzes[i].questions.indexWhere((q) => q.id == questionId);
+          if (qIdx != -1) {
+            final updatedQuestions = List<QuizQuestionModel>.from(_courseQuizzes[i].questions);
+            updatedQuestions[qIdx] = updatedQ;
+            _courseQuizzes[i] = _courseQuizzes[i].copyWith(questions: updatedQuestions);
+            break;
+          }
+        }
+        _isSaving = false;
+        notifyListeners();
+        return true;
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+    } catch (_) {
+      _errorMessage = 'Failed to update quiz question';
     }
 
     _isSaving = false;
@@ -891,13 +1036,16 @@ class InstructorProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['attempts'] is List) {
         _quizAttempts = (data['attempts'] as List)
-            .map((a) => QuizAttemptModel.fromJson(a as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((a) => QuizAttemptModel.fromJson(Map<String, dynamic>.from(a)))
             .toList();
       } else {
         _quizAttempts = [];
       }
     } catch (_) {
-      _quizAttempts = _getDemoAttempts(quizId);
+      if (_quizAttempts.isEmpty) {
+        _quizAttempts = _getDemoAttempts(quizId);
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -911,13 +1059,16 @@ class InstructorProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['assignments'] is List) {
         _courseAssignments = (data['assignments'] as List)
-            .map((a) => AssignmentModel.fromJson(a as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((a) => AssignmentModel.fromJson(Map<String, dynamic>.from(a)))
             .toList();
       } else {
         _courseAssignments = [];
       }
     } catch (_) {
-      _courseAssignments = _getDemoAssignments(courseId);
+      if (_courseAssignments.isEmpty) {
+        _courseAssignments = _getDemoAssignments(courseId);
+      }
     }
     notifyListeners();
   }
@@ -952,7 +1103,7 @@ class InstructorProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['assignment'] != null) {
-        final newAssignment = AssignmentModel.fromJson(data['assignment'] as Map<String, dynamic>);
+        final newAssignment = AssignmentModel.fromJson(Map<String, dynamic>.from(data['assignment'] as Map));
         _courseAssignments.add(newAssignment);
         _isSaving = false;
         notifyListeners();
@@ -978,6 +1129,37 @@ class InstructorProvider extends ChangeNotifier {
     _isSaving = false;
     notifyListeners();
     return true;
+  }
+
+  // 25b. Update Assignment
+  Future<bool> updateAssignment(String assignmentId, Map<String, dynamic> updateData) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.patch(
+        ApiEndpoints.assignmentById(assignmentId),
+        data: updateData,
+      );
+      final data = response.data['data'];
+      if (data != null && data['assignment'] != null) {
+        final updated = AssignmentModel.fromJson(Map<String, dynamic>.from(data['assignment'] as Map));
+        final idx = _courseAssignments.indexWhere((a) => a.id == assignmentId);
+        if (idx != -1) _courseAssignments[idx] = updated;
+        _isSaving = false;
+        notifyListeners();
+        return true;
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+    } catch (_) {
+      _errorMessage = 'Failed to update assignment';
+    }
+
+    _isSaving = false;
+    notifyListeners();
+    return false;
   }
 
   // 26. Publish Assignment
@@ -1027,13 +1209,16 @@ class InstructorProvider extends ChangeNotifier {
       final data = response.data['data'];
       if (data != null && data['submissions'] is List) {
         _assignmentSubmissions = (data['submissions'] as List)
-            .map((s) => AssignmentSubmissionModel.fromJson(s as Map<String, dynamic>))
+            .whereType<Map>()
+            .map((s) => AssignmentSubmissionModel.fromJson(Map<String, dynamic>.from(s)))
             .toList();
       } else {
         _assignmentSubmissions = [];
       }
     } catch (_) {
-      _assignmentSubmissions = _getDemoSubmissions(assignmentId);
+      if (_assignmentSubmissions.isEmpty) {
+        _assignmentSubmissions = _getDemoSubmissions(assignmentId);
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -1064,7 +1249,7 @@ class InstructorProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['submission'] != null) {
-        final updated = AssignmentSubmissionModel.fromJson(data['submission'] as Map<String, dynamic>);
+        final updated = AssignmentSubmissionModel.fromJson(Map<String, dynamic>.from(data['submission'] as Map));
         final idx = _assignmentSubmissions.indexWhere((s) => s.id == submissionId);
         if (idx != -1) _assignmentSubmissions[idx] = updated;
         _isSaving = false;

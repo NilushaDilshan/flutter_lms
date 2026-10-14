@@ -136,7 +136,8 @@ class _LoginScreenState extends State<LoginScreen> {
       return 'ADMIN';
     } else if (lower.contains('instructor') ||
         lower.contains('teacher') ||
-        lower.contains('nimal')) {
+        lower.contains('nimal') ||
+        lower.contains('nimsara')) {
       return 'INSTRUCTOR';
     }
     return 'STUDENT';
@@ -371,6 +372,46 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: AppColors.primary,
                             ),
                           ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Divider(),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Quick Login Accounts:',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        ActionChip(
+                          avatar: const Icon(Icons.school_outlined, size: 16, color: AppColors.primary),
+                          label: const Text('Student', style: TextStyle(fontSize: 12)),
+                          onPressed: () {
+                            _emailController.text = 'kamal.perera@example.com';
+                            _passwordController.text = 'Password123!';
+                          },
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.co_present_outlined, size: 16, color: AppColors.instructorRole),
+                          label: const Text('Instructor', style: TextStyle(fontSize: 12)),
+                          onPressed: () {
+                            _emailController.text = 'nimsaradilshan957@gmail.com';
+                            _passwordController.text = 'Password123!';
+                          },
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16, color: AppColors.adminRole),
+                          label: const Text('Admin', style: TextStyle(fontSize: 12)),
+                          onPressed: () {
+                            _emailController.text = 'admin@lms.com';
+                            _passwordController.text = 'AdminPass123!';
+                          },
                         ),
                       ],
                     ),

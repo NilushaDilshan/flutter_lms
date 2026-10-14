@@ -98,7 +98,7 @@ class RouteGenerator {
         final args = settings.arguments as Map<String, dynamic>?;
         final name = args?['name'] as String? ?? 'Nimal Fernando';
         return MaterialPageRoute(
-          builder: (_) => InstructorDashboardScreen(instructorName: name),
+          builder: (_) => InstructorMainScreen(instructorName: name),
           settings: settings,
         );
 
