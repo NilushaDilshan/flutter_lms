@@ -276,133 +276,331 @@ class _AdminUserManagementScreenState extends State<AdminUserManagementScreen> {
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // User Avatar
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: roleColor.withAlpha(25),
-              child: Text(
-                user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U',
-                style: TextStyle(fontWeight: FontWeight.bold, color: roleColor, fontSize: 16),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _showUserDetailsModal(context, user),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // User Avatar
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: roleColor.withAlpha(25),
+                child: Text(
+                  user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: roleColor, fontSize: 16),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-            // User Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          user.fullName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-
-                      // Animated Status Badge (Day 9 AnimatedContainer feature!)
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 350),
-                        curve: Curves.easeInOut,
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: user.isActive ? Colors.green.shade50 : Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: user.isActive ? Colors.green.shade300 : Colors.red.shade300,
+              // User Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            user.fullName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              user.isActive ? Icons.check_circle : Icons.cancel,
-                              size: 11,
-                              color: user.isActive ? AppColors.success : AppColors.error,
+                        const SizedBox(width: 6),
+
+                        // Animated Status Badge (Day 9 AnimatedContainer feature!)
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 350),
+                          curve: Curves.easeInOut,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: user.isActive ? Colors.green.shade50 : Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: user.isActive ? Colors.green.shade300 : Colors.red.shade300,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              user.status,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                user.isActive ? Icons.check_circle : Icons.cancel,
+                                size: 11,
                                 color: user.isActive ? AppColors.success : AppColors.error,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                user.status,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: user.isActive ? AppColors.success : AppColors.error,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      user.email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Role Badge & Email Verified Indicator
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: roleColor.withAlpha(20),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(roleIcon, size: 11, color: roleColor),
+                              const SizedBox(width: 4),
+                              Text(
+                                user.role,
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: roleColor),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (user.isEmailVerified)
+                          const Row(
+                            children: [
+                              Icon(Icons.verified, size: 12, color: AppColors.primary),
+                              SizedBox(width: 2),
+                              Text('Verified', style: TextStyle(fontSize: 10, color: AppColors.primary)),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Suspend / Reactivate Action Menu
+              if (!user.isAdmin)
+                IconButton(
+                  icon: Icon(
+                    user.isActive ? Icons.block_rounded : Icons.replay_rounded,
+                    color: user.isActive ? Colors.orange.shade800 : AppColors.success,
+                    size: 22,
+                  ),
+                  tooltip: user.isActive ? 'Suspend User' : 'Reactivate User',
+                  onPressed: () => _handleToggleStatus(user),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showUserDetailsModal(BuildContext context, UserModel user) {
+    Color roleColor;
+    switch (user.role) {
+      case 'ADMIN':
+        roleColor = AppColors.adminRole;
+        break;
+      case 'INSTRUCTOR':
+        roleColor = AppColors.instructorRole;
+        break;
+      default:
+        roleColor = AppColors.studentRole;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Header
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: roleColor.withAlpha(30),
+                    child: Text(
+                      user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U',
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: roleColor),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.fullName,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: roleColor.withAlpha(20),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                user.role,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: roleColor,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: user.isActive ? Colors.green.shade50 : Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: user.isActive ? Colors.green.shade300 : Colors.red.shade300,
+                                ),
+                              ),
+                              child: Text(
+                                user.status,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: user.isActive ? AppColors.success : AppColors.error,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    user.email,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(height: 6),
-
-                  // Role Badge & Email Verified Indicator
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: roleColor.withAlpha(20),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(roleIcon, size: 11, color: roleColor),
-                            const SizedBox(width: 4),
-                            Text(
-                              user.role,
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: roleColor),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (user.isEmailVerified)
-                        const Row(
-                          children: [
-                            Icon(Icons.verified, size: 12, color: AppColors.primary),
-                            SizedBox(width: 2),
-                            Text('Verified', style: TextStyle(fontSize: 10, color: AppColors.primary)),
-                          ],
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
+              const SizedBox(height: 20),
+              const Divider(height: 1),
+              const SizedBox(height: 16),
 
-            // Suspend / Reactivate Action Menu
-            if (!user.isAdmin)
-              IconButton(
-                icon: Icon(
-                  user.isActive ? Icons.block_rounded : Icons.replay_rounded,
-                  color: user.isActive ? Colors.orange.shade800 : AppColors.success,
-                  size: 22,
-                ),
-                tooltip: user.isActive ? 'Suspend User' : 'Reactivate User',
-                onPressed: () => _handleToggleStatus(user),
+              // Details List
+              _buildDetailRow(Icons.fingerprint_rounded, 'User ID', user.id),
+              const SizedBox(height: 12),
+              _buildDetailRow(Icons.email_outlined, 'Email Address', user.email),
+              const SizedBox(height: 12),
+              _buildDetailRow(
+                Icons.mark_email_read_outlined,
+                'Email Verification',
+                user.isEmailVerified ? 'Verified' : 'Not Verified',
+                valueColor: user.isEmailVerified ? AppColors.success : AppColors.error,
               ),
-          ],
+              if (user.bio != null && user.bio!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _buildDetailRow(Icons.info_outline_rounded, 'Bio / Headline', user.bio!),
+              ],
+              const SizedBox(height: 24),
+
+              // Actions
+              Row(
+                children: [
+                  if (!user.isAdmin) ...[
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: user.isActive ? Colors.orange.shade800 : AppColors.success,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: Icon(
+                          user.isActive ? Icons.block_rounded : Icons.replay_rounded,
+                          size: 18,
+                        ),
+                        label: Text(user.isActive ? 'Suspend User' : 'Reactivate User'),
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                          _handleToggleStatus(user);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () => Navigator.pop(sheetContext),
+                      child: const Text('Close'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value, {Color? valueColor}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: AppColors.textSecondary),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 110,
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+          ),
         ),
-      ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: valueColor ?? AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

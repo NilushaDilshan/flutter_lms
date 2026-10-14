@@ -8,7 +8,6 @@ import '../../features/courses/screens/course_catalog_screen.dart';
 import '../../features/courses/screens/course_detail_screen.dart';
 import '../../features/courses/screens/lesson_player_screen.dart';
 import '../../features/courses/screens/my_courses_screen.dart';
-import '../../features/dashboard/screens/admin_dashboard_screen.dart';
 import '../../features/dashboard/screens/instructor_dashboard_screen.dart';
 import '../../features/dashboard/screens/student_dashboard_screen.dart';
 import '../../features/assignments/models/assignment_model.dart';
@@ -106,7 +105,7 @@ class RouteGenerator {
         final args = settings.arguments as Map<String, dynamic>?;
         final email = args?['email'] as String? ?? 'admin@lms.com';
         return MaterialPageRoute(
-          builder: (_) => AdminDashboardScreen(adminEmail: email),
+          builder: (_) => AdminMainScreen(adminEmail: email),
           settings: settings,
         );
 

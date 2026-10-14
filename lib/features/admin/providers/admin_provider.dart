@@ -122,15 +122,18 @@ class AdminProvider extends ChangeNotifier {
       final response = await _apiClient.get(ApiEndpoints.adminDashboard);
       final data = response.data['data'];
       if (data != null) {
-        final dashMap = data['dashboard'] is Map<String, dynamic>
-            ? data['dashboard'] as Map<String, dynamic>
-            : data as Map<String, dynamic>;
+        final rawDash = (data is Map && data['dashboard'] != null)
+            ? data['dashboard']
+            : data;
+        final dashMap = rawDash is Map
+            ? Map<String, dynamic>.from(rawDash)
+            : <String, dynamic>{};
         _dashboardSummary = AdminDashboardModel.fromJson(dashMap);
       } else {
         _dashboardSummary = _getDemoDashboard();
       }
     } catch (_) {
-      _dashboardSummary = _getDemoDashboard();
+      _dashboardSummary ??= _getDemoDashboard();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -192,7 +195,10 @@ class AdminProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['user'] != null) {
-        final updatedUser = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+        final rawUser = data['user'];
+        final updatedUser = UserModel.fromJson(
+          rawUser is Map ? Map<String, dynamic>.from(rawUser) : {},
+        );
         final idx = _users.indexWhere((u) => u.id == userId);
         if (idx != -1) {
           _users[idx] = updatedUser;
@@ -203,11 +209,17 @@ class AdminProvider extends ChangeNotifier {
       return true;
     } on ApiException catch (e) {
       _errorMessage = e.message;
-      _updateUserStatusLocally(userId, status);
-      return true;
+      if (e.statusCode == null || userId.startsWith('usr-') || userId.startsWith('u-') || userId.startsWith('demo-')) {
+        _updateUserStatusLocally(userId, status);
+        return true;
+      }
+      return false;
     } catch (_) {
-      _updateUserStatusLocally(userId, status);
-      return true;
+      if (userId.startsWith('usr-') || userId.startsWith('u-') || userId.startsWith('demo-')) {
+        _updateUserStatusLocally(userId, status);
+        return true;
+      }
+      return false;
     } finally {
       _isActionLoading = false;
       notifyListeners();
@@ -271,7 +283,10 @@ class AdminProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['category'] != null) {
-        final cat = CategoryModel.fromJson(data['category'] as Map<String, dynamic>);
+        final rawCat = data['category'];
+        final cat = CategoryModel.fromJson(
+          rawCat is Map ? Map<String, dynamic>.from(rawCat) : {},
+        );
         _categories.insert(0, cat);
         return true;
       }
@@ -327,7 +342,10 @@ class AdminProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['category'] != null) {
-        final updated = CategoryModel.fromJson(data['category'] as Map<String, dynamic>);
+        final rawCat = data['category'];
+        final updated = CategoryModel.fromJson(
+          rawCat is Map ? Map<String, dynamic>.from(rawCat) : {},
+        );
         final idx = _categories.indexWhere((c) => c.id == id);
         if (idx != -1) _categories[idx] = updated;
         return true;
@@ -378,7 +396,10 @@ class AdminProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['category'] != null) {
-        final updated = CategoryModel.fromJson(data['category'] as Map<String, dynamic>);
+        final rawCat = data['category'];
+        final updated = CategoryModel.fromJson(
+          rawCat is Map ? Map<String, dynamic>.from(rawCat) : {},
+        );
         final idx = _categories.indexWhere((c) => c.id == id);
         if (idx != -1) _categories[idx] = updated;
         return true;
@@ -451,7 +472,10 @@ class AdminProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['course'] != null) {
-        final updated = CourseModel.fromJson(data['course'] as Map<String, dynamic>);
+        final rawCourse = data['course'];
+        final updated = CourseModel.fromJson(
+          rawCourse is Map ? Map<String, dynamic>.from(rawCourse) : {},
+        );
         final idx = _adminCourses.indexWhere((c) => c.id == courseId);
         if (idx != -1) _adminCourses[idx] = updated;
         return true;
@@ -590,7 +614,10 @@ class AdminProvider extends ChangeNotifier {
       );
       final data = response.data['data'];
       if (data != null && data['review'] != null) {
-        final updated = ReviewModel.fromJson(data['review'] as Map<String, dynamic>);
+        final rawReview = data['review'];
+        final updated = ReviewModel.fromJson(
+          rawReview is Map ? Map<String, dynamic>.from(rawReview) : {},
+        );
         final idx = _reviews.indexWhere((r) => r.id == reviewId);
         if (idx != -1) _reviews[idx] = updated;
       } else {

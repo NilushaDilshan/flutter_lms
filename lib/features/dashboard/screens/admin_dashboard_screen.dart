@@ -6,6 +6,7 @@ import '../../../core/widgets/confirmation_dialog.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../admin/providers/admin_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   final String adminEmail;
@@ -43,10 +44,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
 
     if (confirmed && context.mounted) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.login,
-        (route) => false,
-      );
+      await context.read<AuthProvider>().logout();
+      if (context.mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRoutes.login,
+          (route) => false,
+        );
+      }
     }
   }
 
