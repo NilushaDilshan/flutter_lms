@@ -357,8 +357,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           avatar: const Icon(Icons.admin_panel_settings_outlined, size: 16, color: AppColors.adminRole),
                           label: const Text('Admin', style: TextStyle(fontSize: 12)),
                           onPressed: () {
-                            _emailController.text = 'admin@lms.com';
-                            _passwordController.text = 'AdminPass123!';
+                            _emailController.text = 'admin@example.com';
+                            _passwordController.text = 'Password123!';
                           },
                         ),
                       ],
