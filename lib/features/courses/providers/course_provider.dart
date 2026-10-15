@@ -189,6 +189,19 @@ class CourseProvider extends ChangeNotifier {
 
   // ── LOAD COURSE DETAILS & SECTIONS ────────────────────────────────────────
   Future<void> loadCourseDetails(String courseId) async {
+    if (_selectedCourse?.id != courseId) {
+      _selectedCourse = null;
+      _sections = [];
+      final cached = _courses.where((c) => c.id == courseId);
+      if (cached.isNotEmpty) {
+        _selectedCourse = cached.first;
+      } else {
+        final enrolled = _myEnrollments.where((e) => e.course?.id == courseId || e.courseId == courseId);
+        if (enrolled.isNotEmpty && enrolled.first.course != null) {
+          _selectedCourse = enrolled.first.course;
+        }
+      }
+    }
     _isLoadingDetails = true;
     _errorMessage = null;
     notifyListeners();

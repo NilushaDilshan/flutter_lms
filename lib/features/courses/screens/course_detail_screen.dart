@@ -8,6 +8,7 @@ import '../models/lesson_model.dart';
 import '../models/review_model.dart';
 import '../models/section_model.dart';
 import '../providers/course_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final String courseId;
@@ -343,6 +344,20 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                             icon: const Icon(Icons.quiz_outlined, size: 16, color: AppColors.accent),
                             label: const Text('Quizzes', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                             onPressed: () {
+                              final auth = context.read<AuthProvider>();
+                              final isStaff = auth.currentUser?.role == 'INSTRUCTOR' || auth.currentUser?.role == 'ADMIN';
+                              if (!isEnrolled && !isStaff) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text('Enroll in this course to access its quizzes.'),
+                                    action: SnackBarAction(
+                                      label: 'Enroll Now',
+                                      onPressed: () => _handleEnroll(),
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
                               Navigator.of(context).pushNamed(
                                 AppRoutes.quizzes,
                                 arguments: {
@@ -359,6 +374,20 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                             icon: const Icon(Icons.assignment_outlined, size: 16, color: Colors.purple),
                             label: const Text('Assignments', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                             onPressed: () {
+                              final auth = context.read<AuthProvider>();
+                              final isStaff = auth.currentUser?.role == 'INSTRUCTOR' || auth.currentUser?.role == 'ADMIN';
+                              if (!isEnrolled && !isStaff) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text('Enroll in this course to access its assignments.'),
+                                    action: SnackBarAction(
+                                      label: 'Enroll Now',
+                                      onPressed: () => _handleEnroll(),
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
                               Navigator.of(context).pushNamed(
                                 AppRoutes.assignments,
                                 arguments: {

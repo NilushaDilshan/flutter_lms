@@ -53,20 +53,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       } catch (e) {
         if (!mounted) return;
-        // Connection error → backend offline → show demo notice
-        // Real API error (401/403/etc.) → show actual message
-        final isOffline = e is ApiException &&
-            (e.statusCode == 503 || e.statusCode == 408);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: isOffline ? Colors.orange : AppColors.error,
+            backgroundColor: AppColors.error,
             duration: const Duration(seconds: 3),
             content: Text(
-              isOffline
-                  ? '⚠️ Demo Mode: Backend offline. Image upload simulated.'
-                  : (e is ApiException
-                      ? e.message
-                      : 'Failed to upload image. Please try again.'),
+              e is ApiException
+                  ? e.message
+                  : 'Failed to upload image. Please try again.',
             ),
           ),
         );
@@ -340,34 +334,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               } catch (e) {
                 if (!ctx.mounted) return;
-                final isOffline = e is ApiException &&
-                    (e.statusCode == 503 || e.statusCode == 408);
-                if (isOffline) {
-                  // Backend truly offline — demo mode
-                  Navigator.of(ctx).pop();
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      backgroundColor: Colors.orange,
-                      duration: Duration(seconds: 3),
-                      content: Text(
-                        '⚠️ Demo Mode: Backend offline. Password change simulated.',
-                      ),
+                messenger.showSnackBar(
+                  SnackBar(
+                    backgroundColor: AppColors.error,
+                    duration: const Duration(seconds: 3),
+                    content: Text(
+                      e is ApiException
+                          ? e.message
+                          : 'Failed to update password. Please try again.',
                     ),
-                  );
-                } else {
-                  // Real error (wrong current password, validation, etc.)
-                  messenger.showSnackBar(
-                    SnackBar(
-                      backgroundColor: AppColors.error,
-                      duration: const Duration(seconds: 3),
-                      content: Text(
-                        e is ApiException
-                            ? e.message
-                            : 'Failed to update password. Please try again.',
-                      ),
-                    ),
-                  );
-                }
+                  ),
+                );
               }
             },
             child: const Text('Update'),

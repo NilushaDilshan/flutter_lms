@@ -110,8 +110,18 @@ class QuizProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _apiClient.get(ApiEndpoints.courseQuizzes(courseId));
-      final data = response.data['data'];
+      dynamic data;
+      try {
+        final response = await _apiClient.get(ApiEndpoints.courseQuizzes(courseId));
+        data = response.data['data'];
+      } on ApiException catch (e) {
+        if (e.statusCode == 403) {
+          final instructorResp = await _apiClient.get(ApiEndpoints.instructorCourseQuizzes(courseId));
+          data = instructorResp.data['data'];
+        } else {
+          rethrow;
+        }
+      }
       if (data != null && data['quizzes'] is List) {
         _quizzes = (data['quizzes'] as List)
             .whereType<Map>()

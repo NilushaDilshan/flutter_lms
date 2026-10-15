@@ -57,9 +57,21 @@ class AssignmentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response =
-          await _apiClient.get(ApiEndpoints.courseAssignments(cleanedId));
-      _assignments = _parseAssignmentList(response.data);
+      try {
+        final response =
+            await _apiClient.get(ApiEndpoints.courseAssignments(cleanedId));
+        _assignments = _parseAssignmentList(response.data);
+      } on ApiException catch (e) {
+        if (e.statusCode == 403) {
+          // If 403 (e.g. INSUFFICIENT_PERMISSION when logged in as Instructor),
+          // fallback to instructor assignments endpoint
+          final instructorResp = await _apiClient
+              .get(ApiEndpoints.instructorCourseAssignments(cleanedId));
+          _assignments = _parseAssignmentList(instructorResp.data);
+        } else {
+          rethrow;
+        }
+      }
     } on ApiException catch (e) {
       _errorMessage = e.message;
       _assignments = [];

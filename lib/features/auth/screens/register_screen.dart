@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/routes/app_routes.dart';
@@ -134,29 +135,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       }
     } catch (e) {
-      // ── DEMO FALLBACK ─────────────────────────────────────────────────────
-      // Backend unavailable (Docker not running). Navigate to OTP screen
-      // so the UI flow can still be demonstrated.
       if (mounted) {
+        final message = e is ApiException
+            ? e.message
+            : 'Registration failed. Please check your details and try again.';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
-            content: Text(
-              '⚠️ Demo Mode: Backend offline. Navigating to OTP screen for demo.',
-            ),
+          SnackBar(
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+            content: Text(message),
           ),
         );
-        await Future.delayed(const Duration(milliseconds: 1200));
-        if (mounted) {
-          Navigator.of(context).pushNamed(
-            AppRoutes.verifyOtp,
-            arguments: {
-              'email': _emailController.text.trim(),
-              'role': _selectedRole,
-            },
-          );
-        }
       }
     }
   }

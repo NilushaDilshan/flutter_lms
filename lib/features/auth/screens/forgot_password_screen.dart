@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/widgets/custom_button.dart';
@@ -45,17 +46,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         setState(() => _currentStep = 2);
       }
     } catch (e) {
-      // ── DEMO FALLBACK ──────────────────────────────────────────────────────
       if (mounted) {
+        final message = e is ApiException
+            ? e.message
+            : 'Failed to send OTP. Please check your email address.';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
-            content: Text('⚠️ Demo Mode: Backend offline. OTP simulated → use 123456'),
+          SnackBar(
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            content: Text(message),
           ),
         );
-        await Future.delayed(const Duration(milliseconds: 1500));
-        if (mounted) setState(() => _currentStep = 2);
       }
     }
   }
@@ -77,22 +78,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         });
       }
     } catch (e) {
-      // ── DEMO FALLBACK ──────────────────────────────────────────────────────
       if (mounted) {
+        final message = e is ApiException
+            ? e.message
+            : 'Invalid or expired OTP. Please verify and try again.';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
-            content: Text('⚠️ Demo Mode: OTP verified. Proceeding to reset password.'),
+          SnackBar(
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            content: Text(message),
           ),
         );
-        await Future.delayed(const Duration(milliseconds: 1500));
-        if (mounted) {
-          setState(() {
-            _resetToken = 'demo-reset-token';
-            _currentStep = 3;
-          });
-        }
       }
     }
   }
@@ -140,36 +136,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         );
       }
     } catch (e) {
-      // ── DEMO FALLBACK ──────────────────────────────────────────────────────
-      // If using demo reset token, show success dialog anyway
       if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Row(
-              children: const [
-                Icon(Icons.check_circle_rounded, color: AppColors.success, size: 28),
-                SizedBox(width: 10),
-                Text('Password Reset!'),
-              ],
-            ),
-            content: const Text(
-              '⚠️ Demo Mode: Password reset simulated successfully. You can now log in.',
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    AppRoutes.login,
-                    (route) => false,
-                  );
-                },
-                child: const Text('Back to Login'),
-              ),
-            ],
+        final message = e is ApiException
+            ? e.message
+            : 'Failed to reset password. Please try again.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            content: Text(message),
           ),
         );
       }

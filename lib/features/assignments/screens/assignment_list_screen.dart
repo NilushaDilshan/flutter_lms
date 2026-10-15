@@ -296,6 +296,29 @@ class _AssignmentListScreenState extends State<AssignmentListScreen> {
   }
 
   Widget _errorView(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('enrollment')) {
+      return RefreshIndicator(
+        onRefresh: () => _loadAssignments(forceRefresh: true),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 60),
+              child: EmptyStateWidget(
+                icon: Icons.school_outlined,
+                title: 'Enrollment Required',
+                message:
+                    'An active course enrollment is required to view and submit assignments for this course.',
+                actionText: 'Explore Courses',
+                onAction: () => Navigator.pushNamed(context, AppRoutes.courses),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
