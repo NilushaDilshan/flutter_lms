@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/api/api_exception.dart';
@@ -256,9 +258,12 @@ class InstructorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final name = imageFile.name.isNotEmpty ? imageFile.name : 'thumbnail.jpg';
+      final mime = lookupMimeType(imageFile.path) ?? 'image/jpeg';
       final multipart = await MultipartFile.fromFile(
         imageFile.path,
-        filename: imageFile.name.isNotEmpty ? imageFile.name : 'thumbnail.jpg',
+        filename: name,
+        contentType: MediaType.parse(mime),
       );
       final formData = FormData.fromMap({'thumbnail': multipart});
 
@@ -662,7 +667,13 @@ class InstructorProvider extends ChangeNotifier {
           ? ApiEndpoints.uploadLessonVideo(lessonId)
           : ApiEndpoints.uploadLessonDocument(lessonId);
       final fieldName = isVideo ? 'video' : 'document';
-      final multipart = await MultipartFile.fromFile(file.path, filename: file.name);
+      final defaultMime = isVideo ? 'video/mp4' : 'application/pdf';
+      final mime = lookupMimeType(file.path) ?? defaultMime;
+      final multipart = await MultipartFile.fromFile(
+        file.path,
+        filename: file.name,
+        contentType: MediaType.parse(mime),
+      );
       final formData = FormData.fromMap({fieldName: multipart});
 
       final response = await _apiClient.uploadMultipart(endpoint, formData: formData);
@@ -1276,7 +1287,12 @@ class InstructorProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final multipart = await MultipartFile.fromFile(file.path, filename: file.name);
+      final mime = lookupMimeType(file.path) ?? 'application/pdf';
+      final multipart = await MultipartFile.fromFile(
+        file.path,
+        filename: file.name,
+        contentType: MediaType.parse(mime),
+      );
       final formData = FormData.fromMap({'attachment': multipart});
 
       await _apiClient.uploadMultipart(

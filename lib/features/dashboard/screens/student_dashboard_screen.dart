@@ -8,7 +8,10 @@ import '../../../core/widgets/error_state_widget.dart';
 import '../../../core/widgets/loading_state_widget.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../courses/models/enrollment_model.dart';
 import '../../courses/providers/course_provider.dart';
+import '../models/student_dashboard_model.dart';
 
 class StudentDashboardScreen extends StatefulWidget {
   final String studentName;
@@ -48,6 +51,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     );
 
     if (confirmed && context.mounted) {
+      await context.read<AuthProvider>().logout();
+      if (!context.mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil(
         AppRoutes.login,
         (route) => false,
@@ -213,10 +218,17 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
   Widget _buildNormalDashboard() {
     final courseProvider = context.watch<CourseProvider>();
+    final dashboard = courseProvider.studentDashboard;
     final enrollments = courseProvider.myEnrollments;
-    final enrolledCount = enrollments.length;
-    final inProgressCount = enrollments.where((e) => e.progressPercentage > 0 && e.progressPercentage < 100).length;
-    final completedCount = enrollments.where((e) => e.progressPercentage >= 100).length;
+    final enrolledCount = dashboard != null && dashboard.totalEnrollments > 0
+        ? dashboard.totalEnrollments
+        : enrollments.length;
+    final inProgressCount = dashboard != null && dashboard.activeCourses > 0
+        ? dashboard.activeCourses
+        : enrollments.where((e) => e.progressPercentage > 0 && e.progressPercentage < 100).length;
+    final completedCount = dashboard != null && dashboard.completedCourses > 0
+        ? dashboard.completedCourses
+        : enrollments.where((e) => e.progressPercentage >= 100).length;
 
     final firstEnrollment = enrollments.isNotEmpty ? enrollments.first : null;
     final continueTitle = firstEnrollment?.course?.title ?? 'Browse & Enroll in Courses';
@@ -431,24 +443,12 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
 
           const SizedBox(height: 24),
 
-          // Recent Activity Section
+          // Recent Activity Section (Live from Backend)
           const SectionHeader(
             title: 'Recent Activity',
             subtitle: 'Your recent submissions and quiz attempts',
           ),
-          _buildActivityTile(
-            title: 'Quiz 2: State Management Passed',
-            subtitle: 'Score: 92% • 2 hours ago',
-            icon: Icons.quiz_outlined,
-            color: AppColors.success,
-          ),
-          const SizedBox(height: 10),
-          _buildActivityTile(
-            title: 'Assignment 1 Submitted',
-            subtitle: 'Status: Pending Grading • Yesterday',
-            icon: Icons.upload_file_rounded,
-            color: AppColors.studentRole,
-          ),
+          ..._buildRecentActivityList(dashboard, enrollments),
         ],
       ),
     );
@@ -656,5 +656,86 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildRecentActivityList(
+    StudentDashboardModel? dashboard,
+    List<EnrollmentModel> enrollments,
+  ) {
+    final widgets = <Widget>[];
+
+    if (dashboard != null && dashboard.recentQuizResults.isNotEmpty) {
+      for (final quiz in dashboard.recentQuizResults.take(3)) {
+        widgets.add(
+          _buildActivityTile(
+            title: '${quiz.quizTitle} Attempted',
+            subtitle:
+                'Score: ${quiz.score} • ${quiz.passed ? "Passed" : "Needs Review"}${quiz.submittedAt != null ? " • ${_formatTimeAgo(quiz.submittedAt!)}" : ""}',
+            icon: Icons.quiz_outlined,
+            color: quiz.passed ? AppColors.success : AppColors.accent,
+          ),
+        );
+        widgets.add(const SizedBox(height: 10));
+      }
+    }
+
+    if (dashboard != null && dashboard.recentEnrollments.isNotEmpty) {
+      for (final recent in dashboard.recentEnrollments.take(2)) {
+        widgets.add(
+          _buildActivityTile(
+            title: 'Enrolled in ${recent.courseTitle}',
+            subtitle:
+                '${recent.progressPercentage}% progress${recent.lastAccessedAt != null ? " • ${_formatTimeAgo(recent.lastAccessedAt!)}" : ""}',
+            icon: Icons.school_outlined,
+            color: AppColors.studentRole,
+          ),
+        );
+        widgets.add(const SizedBox(height: 10));
+      }
+    }
+
+    if (widgets.isEmpty) {
+      if (enrollments.isNotEmpty) {
+        for (final enroll in enrollments.take(2)) {
+          widgets.add(
+            _buildActivityTile(
+              title: 'Enrolled: ${enroll.course?.title ?? "Course"}',
+              subtitle:
+                  '${enroll.progressPercentage}% completed • Tap to continue',
+              icon: Icons.play_circle_outline_rounded,
+              color: AppColors.primary,
+            ),
+          );
+          widgets.add(const SizedBox(height: 10));
+        }
+      } else {
+        widgets.add(
+          _buildActivityTile(
+            title: 'Welcome to your learning portal',
+            subtitle:
+                'Explore published courses to enroll and track your learning progress.',
+            icon: Icons.info_outline,
+            color: AppColors.textSecondary,
+          ),
+        );
+      }
+    }
+
+    return widgets;
+  }
+
+  String _formatTimeAgo(DateTime date) {
+    final diff = DateTime.now().difference(date);
+    if (diff.inDays > 7) {
+      return '${date.day}/${date.month}/${date.year}';
+    } else if (diff.inDays > 0) {
+      return '${diff.inDays}d ago';
+    } else if (diff.inHours > 0) {
+      return '${diff.inHours}h ago';
+    } else if (diff.inMinutes > 0) {
+      return '${diff.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
   }
 }

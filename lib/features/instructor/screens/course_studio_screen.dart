@@ -244,10 +244,13 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Course Curriculum',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              const Expanded(
+                child: Text(
+                  'Course Curriculum',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
               ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add Section'),
@@ -427,14 +430,17 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        canPublish ? 'Ready to Publish!' : 'Publishing Requirements:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: canPublish ? Colors.green.shade900 : AppColors.primaryDark,
+                      Expanded(
+                        child: Text(
+                          canPublish ? 'Ready to Publish!' : 'Publishing Requirements:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: canPublish ? Colors.green.shade900 : AppColors.primaryDark,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       if (provider.sections.isNotEmpty && !canPublish)
                         InkWell(
                           onTap: () => _publishAllSectionsAndLessons(provider),
@@ -836,10 +842,13 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Course Quizzes 📝',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              const Expanded(
+                child: Text(
+                  'Course Quizzes 📝',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
               ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('Create Quiz'),
@@ -874,10 +883,13 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Course Assignments 📑',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              const Expanded(
+                child: Text(
+                  'Course Assignments 📑',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
               ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('Create Assignment'),

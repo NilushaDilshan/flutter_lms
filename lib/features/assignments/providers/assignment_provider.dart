@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
@@ -180,12 +182,18 @@ class AssignmentProvider extends ChangeNotifier {
     try {
       MultipartFile? multipartFile;
       if (filePath != null && filePath.isNotEmpty) {
+        final name = fileName ?? filePath.split(Platform.pathSeparator).last;
         multipartFile = await MultipartFile.fromFile(
           filePath,
-          filename: fileName ?? filePath.split(Platform.pathSeparator).last,
+          filename: name,
+          contentType: _resolveMediaType(name),
         );
       } else if (fileBytes != null && fileName != null) {
-        multipartFile = MultipartFile.fromBytes(fileBytes, filename: fileName);
+        multipartFile = MultipartFile.fromBytes(
+          fileBytes,
+          filename: fileName,
+          contentType: _resolveMediaType(fileName),
+        );
       }
 
       final formMap = <String, dynamic>{};
@@ -239,9 +247,11 @@ class AssignmentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final name = fileName ?? filePath.split(Platform.pathSeparator).last;
       final multipartFile = await MultipartFile.fromFile(
         filePath,
-        filename: fileName ?? filePath.split(Platform.pathSeparator).last,
+        filename: name,
+        contentType: _resolveMediaType(name),
       );
 
       final formData = FormData.fromMap({'file': multipartFile});
@@ -361,4 +371,29 @@ class AssignmentProvider extends ChangeNotifier {
     _submittedIds.add('assign-flutter-ui');
     notifyListeners();
   }
+}
+
+MediaType _resolveMediaType(String? pathOrName) {
+  if (pathOrName != null && pathOrName.isNotEmpty) {
+    final lower = pathOrName.toLowerCase();
+    if (lower.endsWith('.pdf')) return MediaType('application', 'pdf');
+    if (lower.endsWith('.doc')) return MediaType('application', 'msword');
+    if (lower.endsWith('.docx')) {
+      return MediaType('application',
+          'vnd.openxmlformats-officedocument.wordprocessingml.document');
+    }
+    if (lower.endsWith('.zip')) return MediaType('application', 'zip');
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+      return MediaType('image', 'jpeg');
+    }
+    if (lower.endsWith('.png')) return MediaType('image', 'png');
+    if (lower.endsWith('.txt')) return MediaType('text', 'plain');
+    final lookedUp = lookupMimeType(pathOrName);
+    if (lookedUp != null) {
+      try {
+        return MediaType.parse(lookedUp);
+      } catch (_) {}
+    }
+  }
+  return MediaType('application', 'pdf');
 }

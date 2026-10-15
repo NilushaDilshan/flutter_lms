@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/api/api_exception.dart';
+import '../../dashboard/models/student_dashboard_model.dart';
 import '../models/category_model.dart';
 import '../models/course_model.dart';
 import '../models/enrollment_model.dart';
@@ -20,6 +21,7 @@ class CourseProvider extends ChangeNotifier {
   List<SectionModel> _sections = [];
   CourseProgressModel? _currentProgress;
   List<ReviewModel> _courseReviews = [];
+  StudentDashboardModel? _studentDashboard;
 
   bool _isLoading = false;
   bool _isLoadingDetails = false;
@@ -45,6 +47,7 @@ class CourseProvider extends ChangeNotifier {
   List<SectionModel> get sections => _sections;
   CourseProgressModel? get currentProgress => _currentProgress;
   List<ReviewModel> get courseReviews => _courseReviews;
+  StudentDashboardModel? get studentDashboard => _studentDashboard;
 
   bool get isLoading => _isLoading;
   bool get isLoadingDetails => _isLoadingDetails;
@@ -125,7 +128,7 @@ class CourseProvider extends ChangeNotifier {
       };
 
       if (_selectedCategoryId != null && _selectedCategoryId!.isNotEmpty) {
-        queryParams['category'] = _selectedCategoryId;
+        queryParams['categoryId'] = _selectedCategoryId;
       }
       if (_selectedLevel != null && _selectedLevel!.isNotEmpty) {
         queryParams['level'] = _selectedLevel;
@@ -145,6 +148,12 @@ class CourseProvider extends ChangeNotifier {
           final fetched = (data['courses'] as List)
               .whereType<Map>()
               .map((c) => CourseModel.fromJson(Map<String, dynamic>.from(c)))
+              .where((c) {
+                if (_selectedCategoryId != null && _selectedCategoryId!.isNotEmpty) {
+                  return c.categoryId == _selectedCategoryId;
+                }
+                return true;
+              })
               .toList();
           if (refresh) {
             _courses = fetched;
@@ -152,8 +161,8 @@ class CourseProvider extends ChangeNotifier {
             _courses.addAll(fetched);
           }
         }
-        if (data['pagination'] is Map<String, dynamic>) {
-          final pag = data['pagination'] as Map<String, dynamic>;
+        if (data['pagination'] is Map) {
+          final pag = Map<String, dynamic>.from(data['pagination'] as Map);
           _currentPage = (pag['page'] as num?)?.toInt() ?? _currentPage;
           _totalPages = (pag['totalPages'] as num?)?.toInt() ?? 1;
           _hasNextPage = pag['hasNextPage'] as bool? ?? false;
@@ -507,10 +516,16 @@ class CourseProvider extends ChangeNotifier {
   }
 
   // Load Student Dashboard (Postman: GET /api/v1/dashboard/student)
-  Future<Map<String, dynamic>?> loadStudentDashboard() async {
+  Future<StudentDashboardModel?> loadStudentDashboard() async {
     try {
       final response = await _apiClient.get(ApiEndpoints.studentDashboard);
-      return response.data['data'] as Map<String, dynamic>?;
+      final raw = response.data['data'];
+      if (raw is Map) {
+        _studentDashboard = StudentDashboardModel.fromJson(Map<String, dynamic>.from(raw));
+        notifyListeners();
+        return _studentDashboard;
+      }
+      return null;
     } catch (_) {
       return null;
     }

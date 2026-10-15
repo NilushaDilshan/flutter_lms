@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/api/api_exception.dart';
@@ -184,9 +186,11 @@ class ProfileProvider extends ChangeNotifier {
 
     try {
       final fileName = imageFile.name.isNotEmpty ? imageFile.name : 'avatar.jpg';
+      final mime = lookupMimeType(imageFile.path) ?? 'image/jpeg';
       final multipartFile = await MultipartFile.fromFile(
         imageFile.path,
         filename: fileName,
+        contentType: MediaType.parse(mime),
       );
 
       // Exact multipart field key per task specification: 'profileImage'

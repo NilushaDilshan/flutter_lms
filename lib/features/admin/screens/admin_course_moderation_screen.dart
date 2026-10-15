@@ -265,28 +265,37 @@ class _AdminCourseModerationScreenState extends State<AdminCourseModerationScree
             // Actions Row
             Row(
               children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.visibility_outlined, size: 16),
-                  label: const Text('Inspect Details', style: TextStyle(fontSize: 12)),
-                  onPressed: () {
-                    Navigator.of(context).pushNamed(
-                      AppRoutes.courseDetail,
-                      arguments: {'courseId': course.id, 'title': course.title},
-                    );
-                  },
-                ),
-                const Spacer(),
-                if (!course.isArchived)
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.archive_outlined, size: 16),
-                    label: const Text('Archive Course', style: TextStyle(fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepOrange.shade800,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                Flexible(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.visibility_outlined, size: 16),
+                    label: const Text('Inspect Details', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      minimumSize: const Size(0, 36),
                     ),
-                    onPressed: () => _handleArchiveCourse(course),
+                    onPressed: () {
+                      Navigator.of(context).pushNamed(
+                        AppRoutes.courseDetail,
+                        arguments: {'courseId': course.id, 'title': course.title},
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (!course.isArchived)
+                  Flexible(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.archive_outlined, size: 16),
+                      label: const Text('Archive Course', style: TextStyle(fontSize: 12)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepOrange.shade800,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(0, 36),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () => _handleArchiveCourse(course),
+                    ),
                   )
                 else
                   Container(

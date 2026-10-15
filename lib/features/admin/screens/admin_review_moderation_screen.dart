@@ -246,10 +246,13 @@ class _AdminReviewModerationScreenState extends State<AdminReviewModerationScree
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '${review.createdAt.year}-${review.createdAt.month.toString().padLeft(2, '0')}-${review.createdAt.day.toString().padLeft(2, '0')}',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                  Flexible(
+                    child: Text(
+                      '${review.createdAt.year}-${review.createdAt.month.toString().padLeft(2, '0')}-${review.createdAt.day.toString().padLeft(2, '0')}',
+                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   ElevatedButton.icon(
                     icon: Icon(
                       review.isVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -262,6 +265,7 @@ class _AdminReviewModerationScreenState extends State<AdminReviewModerationScree
                     style: ElevatedButton.styleFrom(
                       backgroundColor: review.isVisible ? Colors.orange.shade800 : AppColors.success,
                       foregroundColor: Colors.white,
+                      minimumSize: const Size(0, 32),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       visualDensity: VisualDensity.compact,
                     ),
