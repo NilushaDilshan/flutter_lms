@@ -18,14 +18,18 @@ class InstructorDashboardModel {
   });
 
   factory InstructorDashboardModel.fromJson(Map<String, dynamic> json) {
+    final effectiveJson = (json['dashboard'] is Map)
+        ? Map<String, dynamic>.from(json['dashboard'] as Map)
+        : json;
+
     return InstructorDashboardModel(
-      totalCourses: (json['totalCourses'] as num?)?.toInt() ?? 0,
-      publishedCourses: (json['publishedCourses'] as num?)?.toInt() ?? 0,
-      draftCourses: (json['draftCourses'] as num?)?.toInt() ?? 0,
-      archivedCourses: (json['archivedCourses'] as num?)?.toInt() ?? 0,
-      totalEnrollments: (json['totalEnrollments'] as num?)?.toInt() ?? 0,
-      pendingSubmissions: (json['pendingSubmissions'] as num?)?.toInt() ?? 0,
-      averageCourseRating: (json['averageCourseRating'] as num?)?.toDouble() ?? 0.0,
+      totalCourses: (effectiveJson['totalCourses'] as num?)?.toInt() ?? 0,
+      publishedCourses: (effectiveJson['publishedCourses'] as num?)?.toInt() ?? 0,
+      draftCourses: (effectiveJson['draftCourses'] as num?)?.toInt() ?? 0,
+      archivedCourses: (effectiveJson['archivedCourses'] as num?)?.toInt() ?? 0,
+      totalEnrollments: (effectiveJson['totalEnrollments'] as num?)?.toInt() ?? 0,
+      pendingSubmissions: (effectiveJson['pendingSubmissions'] as num?)?.toInt() ?? 0,
+      averageCourseRating: (effectiveJson['averageCourseRating'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

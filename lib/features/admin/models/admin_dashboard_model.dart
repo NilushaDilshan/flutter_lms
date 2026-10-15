@@ -24,23 +24,27 @@ class AdminDashboardModel {
   });
 
   factory AdminDashboardModel.fromJson(Map<String, dynamic> json) {
-    final students = (json['totalStudents'] as num?)?.toInt() ?? 0;
-    final instructors = (json['totalInstructors'] as num?)?.toInt() ?? 0;
-    final users = (json['totalUsers'] as num?)?.toInt() ?? (students + instructors);
-    final pubCourses = (json['publishedCourses'] as num?)?.toInt() ?? 0;
-    final allCourses = (json['totalCourses'] as num?)?.toInt() ?? pubCourses;
+    final effectiveJson = (json['dashboard'] is Map)
+        ? Map<String, dynamic>.from(json['dashboard'] as Map)
+        : json;
+
+    final students = (effectiveJson['totalStudents'] as num?)?.toInt() ?? 0;
+    final instructors = (effectiveJson['totalInstructors'] as num?)?.toInt() ?? 0;
+    final users = (effectiveJson['totalUsers'] as num?)?.toInt() ?? (students + instructors);
+    final pubCourses = (effectiveJson['publishedCourses'] as num?)?.toInt() ?? 0;
+    final allCourses = (effectiveJson['totalCourses'] as num?)?.toInt() ?? pubCourses;
 
     return AdminDashboardModel(
       totalStudents: students,
       totalInstructors: instructors,
-      activeUsers: (json['activeUsers'] as num?)?.toInt() ?? users,
+      activeUsers: (effectiveJson['activeUsers'] as num?)?.toInt() ?? users,
       totalUsers: users,
       publishedCourses: pubCourses,
       totalCourses: allCourses,
-      totalEnrollments: (json['totalEnrollments'] as num?)?.toInt() ?? 0,
-      completedEnrollments: (json['completedEnrollments'] as num?)?.toInt() ?? 0,
-      totalCategories: (json['totalCategories'] as num?)?.toInt() ?? 0,
-      pendingReviews: (json['pendingReviews'] as num?)?.toInt() ?? 0,
+      totalEnrollments: (effectiveJson['totalEnrollments'] as num?)?.toInt() ?? 0,
+      completedEnrollments: (effectiveJson['completedEnrollments'] as num?)?.toInt() ?? 0,
+      totalCategories: (effectiveJson['totalCategories'] as num?)?.toInt() ?? 0,
+      pendingReviews: (effectiveJson['pendingReviews'] as num?)?.toInt() ?? 0,
     );
   }
 

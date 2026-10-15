@@ -98,27 +98,31 @@ class StudentDashboardModel {
   });
 
   factory StudentDashboardModel.fromJson(Map<String, dynamic> json) {
+    final effectiveJson = (json['dashboard'] is Map)
+        ? Map<String, dynamic>.from(json['dashboard'] as Map)
+        : json;
+
     List<StudentRecentEnrollment> enrollments = [];
-    if (json['recentEnrollments'] is List) {
-      enrollments = (json['recentEnrollments'] as List)
+    if (effectiveJson['recentEnrollments'] is List) {
+      enrollments = (effectiveJson['recentEnrollments'] as List)
           .whereType<Map>()
           .map((e) => StudentRecentEnrollment.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     }
 
     List<StudentRecentQuiz> quizzes = [];
-    if (json['recentQuizResults'] is List) {
-      quizzes = (json['recentQuizResults'] as List)
+    if (effectiveJson['recentQuizResults'] is List) {
+      quizzes = (effectiveJson['recentQuizResults'] as List)
           .whereType<Map>()
           .map((q) => StudentRecentQuiz.fromJson(Map<String, dynamic>.from(q)))
           .toList();
     }
 
     return StudentDashboardModel(
-      totalEnrollments: (json['totalEnrollments'] as num?)?.toInt() ?? 0,
-      activeCourses: (json['activeCourses'] as num?)?.toInt() ?? 0,
-      completedCourses: (json['completedCourses'] as num?)?.toInt() ?? 0,
-      pendingAssignments: (json['pendingAssignments'] as num?)?.toInt() ?? 0,
+      totalEnrollments: (effectiveJson['totalEnrollments'] as num?)?.toInt() ?? 0,
+      activeCourses: (effectiveJson['activeCourses'] as num?)?.toInt() ?? 0,
+      completedCourses: (effectiveJson['completedCourses'] as num?)?.toInt() ?? 0,
+      pendingAssignments: (effectiveJson['pendingAssignments'] as num?)?.toInt() ?? 0,
       recentEnrollments: enrollments,
       recentQuizResults: quizzes,
     );
