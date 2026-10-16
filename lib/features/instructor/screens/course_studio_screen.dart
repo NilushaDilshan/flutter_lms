@@ -971,8 +971,10 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
             style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 0,
+            runSpacing: 0,
             children: [
               if (!quiz.isPublished)
                 TextButton.icon(
@@ -1067,8 +1069,10 @@ class _CourseStudioScreenState extends State<CourseStudioScreen> with SingleTick
             ),
           ],
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 0,
+            runSpacing: 0,
             children: [
               if (!assignment.isPublished)
                 TextButton.icon(

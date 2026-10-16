@@ -206,17 +206,26 @@ class _AdminEnrollmentManagementScreenState extends State<AdminEnrollmentManagem
 
             // Enrolled Date
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Course ID: ${enr.courseId}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                Flexible(
+                  child: Text(
+                    'Course ID: ${enr.courseId}',
+                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                Text(
-                  enr.enrolledAt != null
-                      ? 'Enrolled: ${enr.enrolledAt!.year}-${enr.enrolledAt!.month.toString().padLeft(2, '0')}-${enr.enrolledAt!.day.toString().padLeft(2, '0')}'
-                      : 'Enrolled: N/A',
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    enr.enrolledAt != null
+                        ? 'Enrolled: ${enr.enrolledAt!.year}-${enr.enrolledAt!.month.toString().padLeft(2, '0')}-${enr.enrolledAt!.day.toString().padLeft(2, '0')}'
+                        : 'Enrolled: N/A',
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                  ),
                 ),
               ],
             ),
