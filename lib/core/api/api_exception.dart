@@ -109,7 +109,10 @@ class ApiException implements Exception {
       case 500:
       case 502:
       case 503:
-        message = 'Server encountered an issue. Please try again shortly.';
+        // Only override if backend did not supply a meaningful message
+        if (message == 'An unexpected error occurred. Please try again.') {
+          message = 'Server encountered an issue. Please try again shortly.';
+        }
         break;
     }
 
