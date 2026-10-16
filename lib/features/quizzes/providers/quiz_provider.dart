@@ -23,7 +23,7 @@ class QuizProvider extends ChangeNotifier {
   }
 
   void _seedInitialAttempts() {
-    // Demo student has completed Quiz 2: State Management with Provider
+    // Used only by tests / seedDemoQuizzes()
     _attemptsByQuizId['quiz-state-mgmt'] = QuizAttemptModel(
       id: 'demo-att-passed-1',
       quizId: 'quiz-state-mgmt',
@@ -60,6 +60,7 @@ class QuizProvider extends ChangeNotifier {
 
   void seedDemoQuizzes() {
     _quizzes = _getAllDemoQuizzes();
+    _seedInitialAttempts();
     notifyListeners();
   }
 

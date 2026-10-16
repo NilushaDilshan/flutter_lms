@@ -56,9 +56,11 @@ class _QuizListScreenState extends State<QuizListScreen> {
       } catch (_) {
         // Standalone test without CourseProvider
       }
-      await quizProvider.loadQuizzesForCourses(
-        enrolledIds.isNotEmpty ? enrolledIds : ['6a5c39ae384147c91b73906a', 'course-2'],
-      );
+      if (enrolledIds.isEmpty) {
+        // No enrollments yet — keep existing quiz state (preserves seeded demo quizzes)
+        return;
+      }
+      await quizProvider.loadQuizzesForCourses(enrolledIds);
     }
   }
 
