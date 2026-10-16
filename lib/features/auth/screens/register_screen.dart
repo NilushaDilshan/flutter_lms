@@ -282,7 +282,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     label: 'Date of Birth (YYYY-MM-DD)',
                     hint: '2002-05-15',
                     controller: _dobController,
+                    readOnly: true,
                     prefixIcon: const Icon(Icons.calendar_today_outlined, size: 20, color: AppColors.textSecondary),
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime(2002, 5, 15),
+                        firstDate: DateTime(1940),
+                        lastDate: now,
+                      );
+                      if (picked != null) {
+                        final y = picked.year.toString().padLeft(4, '0');
+                        final m = picked.month.toString().padLeft(2, '0');
+                        final d = picked.day.toString().padLeft(2, '0');
+                        setState(() {
+                          _dobController.text = '$y-$m-$d';
+                        });
+                      }
+                    },
                     validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                   ),
                   const SizedBox(height: 16),
